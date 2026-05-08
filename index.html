@@ -327,12 +327,16 @@
 
           <h3>Pull Maryland Property Data</h3>
           <div class="section-note">
-            This pulls smaller batches directly from Maryland's Parcel Points ArcGIS service, so you do not have to download the full statewide CSV.
+            Pull smaller batches directly from Maryland's Parcel Points ArcGIS service. Use ZIP for a tight route, or choose a county to discover every ZIP with matching roof-age leads.
           </div>
+          <label>County</label>
+          <select id="apiCounty" onchange="onCountyChange()">
+            <option value="">All Maryland / ZIP only</option>
+          </select>
           <div class="row">
             <div>
               <label>ZIP Code</label>
-              <input id="apiZip" placeholder="20678" />
+              <input id="apiZip" placeholder="20678 or leave blank for county" />
             </div>
             <div>
               <label>Max Records</label>
@@ -355,10 +359,13 @@
             <option value="no">All property types</option>
           </select>
           <div class="btns">
-            <button class="primary" onclick="pullMarylandPropertyData()">Pull Leads From Maryland</button>
+            <button class="light" onclick="loadMarylandZipCodes()">Show ZIPs in County</button>
+            <button class="primary" onclick="pullMarylandPropertyData()">Pull Leads</button>
+            <button class="dark" onclick="pullTopZipRoutes()">Pull Top ZIPs</button>
             <button class="light" onclick="previewMarylandQuery()">Preview Query</button>
           </div>
-          <div id="apiStatus" class="hint">Ready to pull by ZIP and year built.</div>
+          <div id="apiStatus" class="hint">Ready to pull by ZIP, county, and year built.</div>
+          <div id="zipExplorer" class="hidden" style="margin-top:12px"></div>
 
           <hr style="border:0;border-top:1px solid #e5e7eb;margin:18px 0" />
 
@@ -543,8 +550,16 @@
   <script>
     const CURRENT_YEAR = new Date().getFullYear();
     const MD_PROPERTY_LAYER_URL = 'https://mdgeodata.md.gov/imap/rest/services/PlanningCadastre/MD_PropertyData/MapServer/0/query';
+    const MD_COUNTIES = [
+      ['01','Allegany'], ['02','Anne Arundel'], ['03','Baltimore County'], ['04','Calvert'],
+      ['05','Caroline'], ['06','Carroll'], ['07','Cecil'], ['08','Charles'], ['09','Dorchester'],
+      ['10','Frederick'], ['11','Garrett'], ['12','Harford'], ['13','Howard'], ['14','Kent'],
+      ['15','Montgomery'], ['16','Prince George\'s'], ['17','Queen Anne\'s'], ['18','St. Mary\'s'],
+      ['19','Somerset'], ['20','Talbot'], ['21','Washington'], ['22','Wicomico'], ['23','Worcester'], ['24','Baltimore City']
+    ];
     let leads = [];
     let routeLeads = [];
+    let countyZipStats = [];
 
     const normalize = value => String(value ?? '').trim();
     const cleanHeader = h => normalize(h).toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -598,9 +613,10 @@
       const bldg = a.DESCBLDG ? `Building: ${a.DESCBLDG}` : '';
       const sqft = a.SQFTSTRC ? `Sq Ft: ${a.SQFTSTRC}` : '';
       const landUse = a.DESCLU ? `Land Use: ${a.DESCLU}` : '';
+      const countyCode = a.JURSCODE ? `County Code: ${a.JURSCODE}` : '';
       const acct = a.ACCTID ? `SDAT Acct: ${a.ACCTID}` : '';
       const sdatUrl = a.SDATWEBADR ? `SDAT URL: ${a.SDATWEBADR}` : '';
-      const notes = [landUse, style, bldg, sqft, acct, sdatUrl].filter(Boolean).join(' | ');
+      const notes = [countyCode, landUse, style, bldg, sqft, acct, sdatUrl].filter(Boolean).join(' | ');
       const lead = createLead({ address, city, state: 'MD', zip, yearBuilt, owner: '', neighborhood, notes });
       lead.source = 'Maryland Parcel Points';
       lead.lat = feature.geometry?.y || '';
@@ -675,13 +691,15 @@
       alert(`Imported ${newLeads.length} usable leads.`);
     }
 
-    function buildMarylandWhereClause() {
-      const zip = document.getElementById('apiZip').value.trim();
+    function buildMarylandWhereClause(options = {}) {
+      const county = options.county ?? document.getElementById('apiCounty').value.trim();
+      const zip = options.zip ?? document.getElementById('apiZip').value.trim();
       const from = parseInt(document.getElementById('apiYearFrom').value, 10);
       const to = parseInt(document.getElementById('apiYearTo').value, 10);
       const residentialOnly = document.getElementById('apiResidentialOnly').value === 'yes';
       const parts = [];
 
+      if (county) parts.push(`JURSCODE = '${county.replace(/'/g, "''")}'`);
       if (zip) parts.push(`(PREMZIP = '${zip.replace(/'/g, "''")}' OR ZIPCODE = '${zip.replace(/'/g, "''")}')`);
       if (Number.isFinite(from)) parts.push(`YEARBLT >= '${from}'`);
       if (Number.isFinite(to)) parts.push(`YEARBLT <= '${to}'`);
@@ -690,6 +708,25 @@
       if (residentialOnly) parts.push(`(DESCLU LIKE '%Residential%' OR DESCBLDG LIKE '%Residential%' OR DESCSTYL IS NOT NULL)`);
 
       return parts.length ? parts.join(' AND ') : '1=1';
+    }
+
+    function initCountyDropdown() {
+      const select = document.getElementById('apiCounty');
+      if (!select || select.options.length > 1) return;
+      MD_COUNTIES.forEach(([code, name]) => {
+        const option = document.createElement('option');
+        option.value = code;
+        option.textContent = `${name} County / ${code}`;
+        if (code === '24') option.textContent = 'Baltimore City / 24';
+        select.appendChild(option);
+      });
+    }
+
+    function onCountyChange() {
+      const zipExplorer = document.getElementById('zipExplorer');
+      zipExplorer.classList.add('hidden');
+      zipExplorer.innerHTML = '';
+      document.getElementById('apiStatus').textContent = 'County changed. Click “Show ZIPs in County” to see matching ZIPs.';
     }
 
     function previewMarylandQuery() {
@@ -702,17 +739,87 @@
       const params = new URLSearchParams({
         f: 'json',
         where,
-        outFields: 'ACCTID,ADDRESS,CITY,ZIPCODE,PREMSNUM,PREMSDIR,PREMSNAM,PREMSTYP,PREMCITY,PREMZIP,YEARBLT,DESCSUBD,DESCTOWN,DESCLU,SQFTSTRC,DESCSTYL,DESCBLDG,SDATWEBADR',
+        outFields: 'JURSCODE,ACCTID,ADDRESS,CITY,ZIPCODE,PREMSNUM,PREMSDIR,PREMSNAM,PREMSTYP,PREMCITY,PREMZIP,YEARBLT,DESCSUBD,DESCTOWN,DESCLU,SQFTSTRC,DESCSTYL,DESCBLDG,SDATWEBADR',
         returnGeometry: 'true',
         outSR: '4326',
-        orderByFields: 'YEARBLT ASC, PREMZIP ASC',
+        orderByFields: 'PREMZIP ASC, YEARBLT ASC',
         resultOffset: String(offset),
         resultRecordCount: String(count)
       });
       return `${MD_PROPERTY_LAYER_URL}?${params.toString()}`;
     }
 
-    async function pullMarylandPropertyData() {
+    function buildMarylandZipStatsUrl(where) {
+      const params = new URLSearchParams({
+        f: 'json',
+        where,
+        outFields: 'PREMZIP',
+        returnGeometry: 'false',
+        groupByFieldsForStatistics: 'PREMZIP',
+        outStatistics: JSON.stringify([{ statisticType: 'count', onStatisticField: 'OBJECTID', outStatisticFieldName: 'lead_count' }]),
+        orderByFields: 'lead_count DESC'
+      });
+      return `${MD_PROPERTY_LAYER_URL}?${params.toString()}`;
+    }
+
+    async function loadMarylandZipCodes() {
+      const county = document.getElementById('apiCounty').value.trim();
+      const status = document.getElementById('apiStatus');
+      const zipExplorer = document.getElementById('zipExplorer');
+      if (!county) return alert('Choose a county first, then click Show ZIPs in County.');
+
+      try {
+        status.textContent = 'Loading ZIP codes for selected county and year range...';
+        const where = buildMarylandWhereClause({ zip: '' });
+        const res = await fetch(buildMarylandZipStatsUrl(where));
+        if (!res.ok) throw new Error(`Maryland service returned ${res.status}`);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error.message || 'ArcGIS ZIP query error');
+
+        countyZipStats = (data.features || [])
+          .map(f => ({ zip: f.attributes.PREMZIP || 'Unknown', count: f.attributes.lead_count || 0 }))
+          .filter(z => z.zip && z.zip !== 'Unknown')
+          .sort((a,b) => b.count - a.count);
+
+        const countyName = (MD_COUNTIES.find(c => c[0] === county) || [county, county])[1];
+        zipExplorer.classList.remove('hidden');
+        zipExplorer.innerHTML = `
+          <div class="section-note"><strong>${escapeHtml(countyName)} ZIP Coverage:</strong> Found ${countyZipStats.length} ZIP codes with matching year-built/property filters. Click a ZIP to load it into the ZIP box, or use Pull Top ZIPs.</div>
+          <div class="table-wrap" style="max-height:260px"><table><thead><tr><th>ZIP</th><th>Matching Homes</th><th>Action</th></tr></thead><tbody>
+            ${countyZipStats.map(z => `<tr><td><strong>${escapeHtml(z.zip)}</strong></td><td>${z.count}</td><td><button class="light" onclick="selectApiZip('${escapeAttr(z.zip)}')">Use ZIP</button></td></tr>`).join('')}
+          </tbody></table></div>`;
+        status.textContent = `Found ${countyZipStats.length} ZIP codes. Review the list below.`;
+      } catch (err) {
+        console.error(err);
+        status.innerHTML = `<strong style="color:#b91c1c">Could not load ZIPs.</strong> ${escapeHtml(err.message)}`;
+      }
+    }
+
+    function selectApiZip(zip) {
+      document.getElementById('apiZip').value = zip;
+      document.getElementById('apiStatus').textContent = `ZIP ${zip} selected. Click Pull Leads.`;
+    }
+
+    async function pullTopZipRoutes() {
+      if (!countyZipStats.length) await loadMarylandZipCodes();
+      if (!countyZipStats.length) return;
+      const originalZip = document.getElementById('apiZip').value;
+      const topZips = countyZipStats.slice(0, 5).map(z => z.zip);
+      const perZipMax = Math.max(100, Math.floor((parseInt(document.getElementById('apiMax').value, 10) || 1000) / topZips.length));
+      const oldMax = document.getElementById('apiMax').value;
+
+      for (const zip of topZips) {
+        document.getElementById('apiZip').value = zip;
+        document.getElementById('apiMax').value = perZipMax;
+        await pullMarylandPropertyData(false);
+      }
+
+      document.getElementById('apiZip').value = originalZip;
+      document.getElementById('apiMax').value = oldMax;
+      document.getElementById('apiStatus').innerHTML = `<strong>Top ZIP pull complete.</strong> Pulled leads from: ${topZips.join(', ')}.`;
+    }
+
+    async function pullMarylandPropertyData(showAlert = true)() {
       const status = document.getElementById('apiStatus');
       const where = buildMarylandWhereClause();
       const maxWanted = Math.max(1, parseInt(document.getElementById('apiMax').value, 10) || 1000);
@@ -1024,6 +1131,7 @@
       reader.readAsText(file);
     });
 
+    initCountyDropdown();
     generateCampaignCopy();
     renderAll();
   </script>
