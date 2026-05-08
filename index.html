@@ -541,10 +541,10 @@
           <h2>Lead Builder</h2>
         </div>
         <div class="card-body">
-          <div class="lead-builder-badge">⚡ V5 Clean Dashboard · Coverage Safety Mode</div>
+          <div class="lead-builder-badge">⚡ V7 Owner Enrichment · Property Type Filters</div>
           <div class="command-card">
             <h3>Pull Maryland Property Data</h3>
-            <p>Pick a county, load ZIPs instantly, choose one or multiple ZIPs, then pull only what you need into the dashboard.</p>
+            <p>Pick a county, choose residential/commercial/both, pull leads, open exact SDAT records, and optionally enrich owner names through the included Vercel API route.</p>
           </div>
 
           <label>County</label>
@@ -614,10 +614,11 @@
             </div>
           </div>
 
-          <label>Residential Filter</label>
-          <select id="apiResidentialOnly">
-            <option value="yes">Residential only / best effort</option>
-            <option value="no">All property types</option>
+          <label>Property Type Filter</label>
+          <select id="apiPropertyType">
+            <option value="residential">Residential only</option>
+            <option value="commercial">Commercial only</option>
+            <option value="both">Residential + Commercial</option>
           </select>
 
           <div class="compact-actions">
@@ -628,8 +629,9 @@
             <button class="dark" onclick="pullTopZipRoutes()">Pull Top ZIPs</button>
             <button class="green" onclick="downloadCountyBatches()">Batch Export</button>
             <button class="light" onclick="previewMarylandQuery()">Preview</button>
+            <button class="blue" onclick="enrichVisibleOwners()">Enrich Visible Owners</button>
           </div>
-          <div id="apiStatus" class="hint quick-status">Ready. Use Verify ZIPs to compare the built-in ZIP list against Maryland live parcel data.</div>
+          <div id="apiStatus" class="hint quick-status">Ready. Use Property Type Filter, pull leads, then click Open SDAT or Enrich Owner.</div>
           <div id="zipExplorer" class="hidden" style="margin-top:12px"></div>
 
           <div class="secondary-tools">
@@ -865,6 +867,7 @@
     let leads = [];
     let routeLeads = [];
     let countyZipStats = [];
+    let ownerEnrichInProgress = false;
 
     const normalize = value => String(value ?? '').trim();
     const cleanHeader = h => normalize(h).toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -915,7 +918,7 @@
       const yearBuilt = parseInt(a.YEARBLT, 10);
       const neighborhood = a.DESCSUBD || a.DESCTOWN || '';
       const ownerMailingAddress = [a.OWNADD1, a.OWNADD2, a.OWNCITY, a.OWNSTATE, a.OWNERZIP].filter(Boolean).join(', ');
-      const owner = 'Owner name not provided by Maryland Parcel Points';
+      const owner = 'Click Enrich Owner';
       const landUse = a.DESCLU ? `Land Use: ${a.DESCLU}` : '';
       const countyCode = a.JURSCODE ? `County: ${a.JURSCODE}` : '';
       const style = a.DESCSTYL ? `Style: ${a.DESCSTYL}` : '';
@@ -923,16 +926,21 @@
       const sqft = a.SQFTSTRC ? `Sq Ft: ${a.SQFTSTRC}` : '';
       const acct = a.ACCTID ? `SDAT Acct: ${a.ACCTID}` : '';
       const ownerOccupied = a.OOI ? `Owner Occupied: ${a.OOI}` : '';
-      const sdatUrl = a.SDATWEBADR ? `SDAT URL: ${a.SDATWEBADR}` : '';
+      const rawSdatUrl = a.SDATWEBADR || '';
+      const sdatUrl = rawSdatUrl ? `SDAT URL: ${rawSdatUrl}` : '';
       const notes = [countyCode, landUse, ownerOccupied, style, bldg, sqft, acct, sdatUrl].filter(Boolean).join(' | ');
       const lead = createLead({ address, city, state: 'MD', zip, yearBuilt, owner, neighborhood, notes, ownerMailingAddress });
       lead.source = 'Maryland Parcel Points';
       lead.lat = feature.geometry?.y || '';
       lead.lng = feature.geometry?.x || '';
+      lead.acctid = a.ACCTID || '';
+      lead.jurscode = a.JURSCODE || '';
+      lead.sdatUrl = rawSdatUrl;
+      lead.propertyType = a.DESCLU || a.DESCBLDG || '';
       return lead;
     }
 
-    function createLead({ address, city, state='MD', zip, yearBuilt, owner='', ownerMailingAddress='', neighborhood='', notes='' }) {
+    function createLead({ address, city, state='MD', zip, yearBuilt, owner='', ownerMailingAddress='', neighborhood='', notes='', sdatUrl='', acctid='', jurscode='', propertyType='' }) {
       const numericYear = parseInt(yearBuilt, 10);
       const age = Number.isFinite(numericYear) ? CURRENT_YEAR - numericYear : 0;
       const cleanAddress = normalize(address);
@@ -952,6 +960,11 @@
         ownerMailingAddress: normalize(ownerMailingAddress),
         neighborhood: normalize(neighborhood) || deriveNeighborhood(cleanAddress),
         notes: normalize(notes),
+        sdatUrl: normalize(sdatUrl),
+        acctid: normalize(acctid),
+        jurscode: normalize(jurscode),
+        propertyType: normalize(propertyType),
+        ownerEnriched: false,
         fullAddress,
         score: 0,
         priority: 'Cold'
@@ -1025,7 +1038,7 @@
       const selectedZips = options.zips ?? (options.zip !== undefined ? [options.zip].filter(Boolean) : getSelectedApiZips());
       const from = parseInt(document.getElementById('apiYearFrom').value, 10);
       const to = parseInt(document.getElementById('apiYearTo').value, 10);
-      const residentialOnly = document.getElementById('apiResidentialOnly').value === 'yes';
+      const propertyType = document.getElementById('apiPropertyType')?.value || 'residential';
       const parts = [];
 
       const zipWhere = buildZipWhere(selectedZips);
@@ -1039,7 +1052,11 @@
       if (Number.isFinite(to)) parts.push(`YEARBLT <= '${to}'`);
       parts.push(`YEARBLT IS NOT NULL`);
       parts.push(`ADDRESS IS NOT NULL`);
-      if (residentialOnly) parts.push(`(DESCLU LIKE '%Residential%' OR DESCBLDG LIKE '%Residential%' OR DESCSTYL IS NOT NULL OR RESITYP IS NOT NULL)`);
+      if (propertyType === 'residential') {
+        parts.push(`(DESCLU LIKE '%Residential%' OR DESCBLDG LIKE '%Residential%' OR RESITYP IS NOT NULL OR DESCSTYL IS NOT NULL)`);
+      } else if (propertyType === 'commercial') {
+        parts.push(`(DESCLU LIKE '%Commercial%' OR DESCBLDG LIKE '%Commercial%' OR DESCLU LIKE '%Industrial%' OR DESCBLDG LIKE '%Industrial%' OR DESCLU LIKE '%Office%' OR DESCBLDG LIKE '%Office%' OR DESCLU LIKE '%Retail%' OR DESCBLDG LIKE '%Retail%' OR DESCBLDG LIKE '%Warehouse%')`);
+      }
 
       return parts.length ? parts.join(' AND ') : '1=1';
     }
@@ -1386,6 +1403,62 @@
       return result;
     }
 
+
+    function getSdatUrl(lead) {
+      if (lead.sdatUrl) return lead.sdatUrl;
+      const match = String(lead.notes || '').match(/https?:\/\/[^\s|]+/i);
+      return match ? match[0] : '';
+    }
+
+    function linkifyText(text) {
+      const escaped = escapeHtml(text || '');
+      return escaped.replace(/(https?:\/\/[^\s|<]+)/g, '<a target="_blank" rel="noopener" href="$1">Open Link</a>');
+    }
+
+    async function enrichOwner(leadId) {
+      const lead = leads.find(l => l.id === leadId);
+      if (!lead) return;
+      const url = getSdatUrl(lead);
+      if (!url && !lead.acctid) {
+        alert('No SDAT URL or account ID found for this lead.');
+        return;
+      }
+      const status = document.getElementById('apiStatus');
+      status.textContent = `Looking up owner for ${lead.address}...`;
+      try {
+        const params = new URLSearchParams({ sdatUrl: url, acctid: lead.acctid || '', jurscode: lead.jurscode || '' });
+        const res = await fetch(`/api/enrich-owner?${params.toString()}`);
+        if (!res.ok) throw new Error(`Owner API returned ${res.status}`);
+        const data = await res.json();
+        if (!data.ownerName) throw new Error(data.message || 'Owner name was not found on the public SDAT page.');
+        lead.owner = data.ownerName;
+        lead.ownerEnriched = true;
+        if (data.mailingAddress && !lead.ownerMailingAddress) lead.ownerMailingAddress = data.mailingAddress;
+        renderAll();
+        status.innerHTML = `<strong>Owner enriched:</strong> ${escapeHtml(data.ownerName)}`;
+      } catch (err) {
+        console.error(err);
+        status.innerHTML = `<strong style="color:#b91c1c">Owner enrichment failed.</strong> ${escapeHtml(err.message)}<br><span class="hint">This requires the included Vercel API route. You can still click Open SDAT and view the owner manually.</span>`;
+      }
+    }
+
+    async function enrichVisibleOwners() {
+      if (ownerEnrichInProgress) return;
+      ownerEnrichInProgress = true;
+      const visible = filteredLeads().filter(l => !l.ownerEnriched && getSdatUrl(l)).slice(0, 25);
+      if (!visible.length) {
+        ownerEnrichInProgress = false;
+        alert('No visible leads with SDAT links to enrich.');
+        return;
+      }
+      for (const lead of visible) {
+        await enrichOwner(lead.id);
+        await new Promise(r => setTimeout(r, 300));
+      }
+      ownerEnrichInProgress = false;
+      document.getElementById('apiStatus').innerHTML = `<strong>Owner enrichment complete.</strong> Checked up to ${visible.length} visible leads.`;
+    }
+
     function renderLeads() {
       const rows = filteredLeads().map(l => `
         <tr>
@@ -1397,10 +1470,12 @@
           <td>${escapeHtml(l.zip)}</td>
           <td>${escapeHtml(l.neighborhood)}</td>
           <td>${escapeHtml(l.owner)}${l.ownerMailingAddress ? `<br><span class="hint">${escapeHtml(l.ownerMailingAddress)}</span>` : ''}</td>
-          <td>${escapeHtml(l.notes)}</td>
+          <td>${linkifyText(l.notes)}</td>
           <td>
             <div class="mini-actions">
               <a class="button-link blue" target="_blank" href="${mapsLink(l)}">Map</a>
+              ${getSdatUrl(l) ? `<a class="button-link light" target="_blank" rel="noopener" href="${escapeAttr(getSdatUrl(l))}">Open SDAT</a>` : ''}
+              ${getSdatUrl(l) ? `<button class="green" onclick="enrichOwner('${l.id}')">Enrich Owner</button>` : ''}
               <button class="light" onclick="markChecked('${l.id}')">Checked</button>
               <button class="danger" onclick="deleteLead('${l.id}')">Delete</button>
             </div>
@@ -1487,7 +1562,8 @@
     }
 
     function copyJobNimbusImport() {
-      const text = filteredLeads().map(l => `Roof Age Lead | ${l.fullAddress}\nYear Built: ${l.yearBuilt}\nEstimated Roof/Home Age: ${l.age} years\nPriority: ${l.priority}\nScore: ${l.score}\nNeighborhood: ${l.neighborhood}\nNotes: ${l.notes || 'N/A'}\nRecommended Action: Offer free roof age & condition check with photo documentation.\n`).join('\n---\n');
+      const text = filteredLeads().map(l => `Roof Age Lead | ${l.fullAddress}\nYear Built: ${l.yearBuilt}\nEstimated Roof/Home Age: ${l.age} years\nPriority: ${l.priority}\nScore: ${l.score}\nNeighborhood: ${l.neighborhood}\nNotes: ${l.notes || 'N/A'}\nSDAT Link: ${getSdatUrl(l) || 'N/A'}
+Recommended Action: Offer free roof age & condition check with photo documentation.\n`).join('\n---\n');
       navigator.clipboard.writeText(text || 'No leads selected.');
       alert('JobNimbus-style notes copied.');
     }
