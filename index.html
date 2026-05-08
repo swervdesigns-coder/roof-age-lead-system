@@ -969,34 +969,20 @@
       }
     }
 
-    async function pullMarylandPropertyData(showAlert = true)() {
+    async function pullMarylandPropertyData(showAlert = true) {
       const status = document.getElementById('apiStatus');
-      const where = buildMarylandWhereClause();
+      const selectedZips = getSelectedApiZips();
+      const where = buildMarylandWhereClause({ zips: selectedZips });
       const maxWanted = Math.max(1, parseInt(document.getElementById('apiMax').value, 10) || 1000);
-      const batchSize = Math.min(2000, maxWanted);
-      let offset = 0;
-      let imported = 0;
       let allNew = [];
 
-      status.textContent = 'Connecting to Maryland Parcel Points...';
+      status.textContent = selectedZips.length > 1
+        ? `Connecting to Maryland Parcel Points for ${selectedZips.length} selected ZIPs...`
+        : 'Connecting to Maryland Parcel Points...';
 
       try {
-        while (imported < maxWanted) {
-          const count = Math.min(batchSize, maxWanted - imported);
-          const url = buildMarylandUrl(where, offset, count);
-          status.textContent = `Pulling records ${offset + 1} to ${offset + count}...`;
-          const res = await fetch(url);
-          if (!res.ok) throw new Error(`Maryland service returned ${res.status}`);
-          const data = await res.json();
-          if (data.error) throw new Error(data.error.message || 'ArcGIS query error');
-          const features = data.features || [];
-          if (!features.length) break;
-          const batchLeads = features.map(leadFromMarylandFeature).filter(l => l.address && l.yearBuilt);
-          allNew = allNew.concat(batchLeads);
-          imported += features.length;
-          offset += features.length;
-          if (features.length < count) break;
-        }
+        const features = await fetchMarylandFeatures(where, maxWanted, 'Pulling selected lead records');
+        allNew = features.map(leadFromMarylandFeature).filter(l => l.address && l.yearBuilt);
 
         const existingKeys = new Set(leads.map(l => `${l.address}|${l.zip}|${l.yearBuilt}`.toLowerCase()));
         const uniqueNew = allNew.filter(l => {
@@ -1008,10 +994,10 @@
 
         leads = [...leads, ...uniqueNew].map(scoreLead);
         renderAll();
-        status.innerHTML = `<strong>Done.</strong> Pulled ${allNew.length} records and added ${uniqueNew.length} new leads. Duplicates were skipped.`;
+        status.innerHTML = `<strong>Done.</strong> Pulled ${allNew.length} records and added ${uniqueNew.length} new leads. Duplicates were skipped. For larger pulls, use Download County/ZIP Batches.`;
       } catch (err) {
         console.error(err);
-        status.innerHTML = `<strong style="color:#b91c1c">Could not pull data.</strong> ${escapeHtml(err.message)}<br>Try a smaller ZIP/year range or use the CSV import option.`;
+        status.innerHTML = `<strong style="color:#b91c1c">Could not pull data.</strong> ${escapeHtml(err.message)}<br>Try fewer ZIPs, a smaller year range, or use Download County/ZIP Batches.`;
       }
     }
 
