@@ -222,6 +222,124 @@
       .toolbar { grid-template-columns: 1fr 1fr; }
       .header-inner { grid-template-columns: 1fr; }
     }
+  
+
+    /* V3 Premium Dashboard Polish */
+    body {
+      background:
+        radial-gradient(circle at top left, rgba(122,15,27,.16), transparent 34%),
+        radial-gradient(circle at 85% 8%, rgba(17,17,17,.16), transparent 28%),
+        linear-gradient(135deg, #f9fafb 0%, #eef1f5 52%, #e8ebf0 100%);
+    }
+    header {
+      position: relative;
+      padding: 34px 22px 30px;
+      overflow: hidden;
+      border-bottom: 0;
+      box-shadow: 0 18px 45px rgba(0,0,0,.18);
+    }
+    header::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,.08), transparent 45%),
+        repeating-linear-gradient(135deg, rgba(255,255,255,.04) 0 1px, transparent 1px 18px);
+      pointer-events: none;
+    }
+    .header-inner { position: relative; z-index: 1; }
+    h1 { font-size: 36px; line-height: 1.05; }
+    .subtitle { max-width: 840px; font-size: 16px; color: #ffe5e8; }
+    .brand-pill {
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.16), 0 12px 30px rgba(0,0,0,.2);
+      backdrop-filter: blur(12px);
+    }
+    main { margin-top: 26px; }
+    .card, .stat {
+      border: 1px solid rgba(255,255,255,.7);
+      box-shadow: 0 18px 50px rgba(15,23,42,.12);
+    }
+    .card-head {
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+    .card-head h2::after, .card h3::after {
+      content: "";
+      display: block;
+      width: 42px;
+      height: 4px;
+      background: var(--maroon);
+      border-radius: 999px;
+      margin-top: 8px;
+    }
+    .stat {
+      position: relative;
+      overflow: hidden;
+      min-height: 96px;
+    }
+    .stat::after {
+      content: "";
+      position: absolute;
+      right: -24px;
+      bottom: -24px;
+      width: 82px;
+      height: 82px;
+      border-radius: 999px;
+      background: rgba(122,15,27,.08);
+    }
+    .stat b { font-size: 31px; }
+    input, select, textarea {
+      border-color: #d7dce5;
+      background: #fff;
+      transition: box-shadow .16s ease, border-color .16s ease, transform .16s ease;
+    }
+    input:focus, select:focus, textarea:focus { transform: translateY(-1px); }
+    button, .button-link {
+      transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+      box-shadow: 0 8px 18px rgba(15,23,42,.08);
+    }
+    button:hover, .button-link:hover { transform: translateY(-1px); box-shadow: 0 12px 26px rgba(15,23,42,.14); }
+    .primary { background: linear-gradient(135deg, var(--maroon), var(--maroon-dark)); }
+    .dark { background: linear-gradient(135deg, #111827, #050505); }
+    .green { background: linear-gradient(135deg, #15803d, #0f5f2e); }
+    .blue { background: linear-gradient(135deg, #1d4ed8, #173c9e); }
+    .section-note {
+      background: linear-gradient(135deg, #fff7ed, #fffaf4);
+      border-color: #fed7aa;
+      box-shadow: inset 4px 0 0 var(--maroon);
+    }
+    #apiStatus {
+      padding: 12px 13px;
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+    }
+    #apiZipMulti option { padding: 7px; }
+    .tabs { position: sticky; top: 0; z-index: 5; padding: 8px 0; background: rgba(239,242,246,.82); backdrop-filter: blur(12px); }
+    .tab { box-shadow: 0 6px 14px rgba(15,23,42,.07); }
+    .tab.active { background: linear-gradient(135deg, var(--maroon), var(--maroon-dark)); }
+    th { background: linear-gradient(135deg, #111827, #050505); }
+    .lead-builder-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: #111827;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+    .zip-count-pill {
+      display: inline-flex;
+      border-radius: 999px;
+      padding: 4px 8px;
+      background: #eef2ff;
+      color: #1d4ed8;
+      font-weight: 800;
+      font-size: 12px;
+    }
+
   </style>
 </head>
 <body>
@@ -250,9 +368,10 @@
           <h2>Lead Builder</h2>
         </div>
         <div class="card-body">
+          <div class="lead-builder-badge">⚡ V3 Premium · Fast ZIP Mode</div>
           <h3>Pull Maryland Property Data</h3>
           <div class="section-note">
-            Pick a county, show the ZIPs in that county, select one or multiple ZIPs, then pull a controlled number of leads into the app. Use batch export for larger pulls.
+            Pick a county, load ZIPs instantly, select one or multiple ZIPs, then pull a controlled number of leads into the app. Use batch export for larger pulls without slowing down the dashboard.
           </div>
 
           <label>County</label>
@@ -324,8 +443,9 @@
           </select>
 
           <div class="btns">
-            <button class="light" onclick="loadMarylandZipCodes()">Show ZIPs in County</button>
+            <button class="light" onclick="loadMarylandZipCodes()">Show ZIPs Fast</button>
             <button class="primary" onclick="pullMarylandPropertyData()">Pull Selected Leads</button>
+            <button class="light" onclick="deepScanMarylandZipCodes()">Deep Scan ZIP Counts</button>
             <button class="dark" onclick="pullTopZipRoutes()">Pull Top ZIPs</button>
             <button class="green" onclick="downloadCountyBatches()">Download County/ZIP Batches</button>
             <button class="light" onclick="previewMarylandQuery()">Preview Query</button>
@@ -527,6 +647,33 @@
       ['MONT','Montgomery'], ['PRGE',"Prince George's"], ['QUEE',"Queen Anne's"], ['STMA',"St. Mary's"],
       ['SOME','Somerset'], ['TALB','Talbot'], ['WASH','Washington'], ['WICO','Wicomico'], ['WORC','Worcester'], ['BACI','Baltimore City']
     ];
+    const MD_COUNTY_ZIPS = {
+      ALLE: ['21502','21521','21524','21528','21529','21530','21532','21539','21540','21543','21545','21557','21562'],
+      ANAR: ['20711','20724','20733','20751','20754','20755','20764','20765','20776','20778','20779','20794','21012','21032','21035','21037','21054','21056','21060','21061','21076','21077','21090','21108','21113','21114','21122','21140','21144','21146','21225','21226','21401','21403','21405','21409'],
+      BACO: ['21013','21020','21022','21027','21030','21031','21051','21052','21053','21057','21065','21071','21082','21087','21111','21117','21120','21128','21131','21133','21136','21152','21155','21156','21162','21204','21206','21207','21208','21209','21210','21212','21219','21220','21221','21222','21227','21228','21234','21236','21237','21239','21244','21250','21252','21282','21286'],
+      CALV: ['20610','20615','20629','20639','20657','20676','20678','20685','20688','20714','20732','20736','20754','20758'],
+      CARO: ['21609','21629','21632','21636','21639','21640','21649','21655','21657','21660','21670'],
+      CARR: ['21048','21074','21088','21102','21104','21136','21155','21757','21776','21784','21787','21791','21797'],
+      CECI: ['21901','21902','21903','21904','21911','21912','21913','21914','21915','21916','21917','21918','21919','21920','21921'],
+      CHAR: ['20601','20602','20603','20604','20606','20607','20611','20613','20616','20617','20622','20625','20632','20637','20640','20643','20645','20646','20658','20659','20662','20664','20675','20677','20693','20695'],
+      DORC: ['21613','21622','21626','21627','21631','21634','21643','21648','21659','21664','21669','21672','21835','21869'],
+      FRED: ['21701','21702','21703','21704','21710','21716','21717','21718','21727','21754','21755','21757','21758','21762','21769','21770','21771','21773','21774','21775','21776','21778','21780','21787','21788','21791','21793','21798'],
+      GARR: ['21520','21522','21523','21531','21536','21538','21541','21550','21561'],
+      HARF: ['21001','21005','21009','21010','21014','21015','21017','21018','21028','21034','21040','21047','21050','21078','21082','21084','21085','21130','21132','21154','21156','21160','21161'],
+      HOWA: ['20701','20723','20759','20763','20777','20794','20833','21029','21036','21042','21043','21044','21045','21046','21075','21076','21104','21163'],
+      KENT: ['21610','21620','21635','21645','21650','21651','21661','21667','21678'],
+      MONT: ['20812','20814','20815','20816','20817','20818','20832','20833','20837','20838','20839','20841','20842','20850','20851','20852','20853','20854','20855','20860','20861','20862','20866','20868','20871','20872','20874','20876','20877','20878','20879','20880','20882','20886','20895','20901','20902','20903','20904','20905','20906','20910','20912'],
+      PRGE: ['20588','20607','20705','20706','20707','20708','20710','20712','20715','20716','20720','20721','20722','20735','20737','20740','20742','20743','20744','20745','20746','20747','20748','20769','20770','20772','20774','20781','20782','20783','20784','20785','20787'],
+      QUEE: ['21607','21617','21619','21620','21623','21628','21638','21644','21656','21658','21666','21668','21670'],
+      STMA: ['20609','20618','20619','20620','20621','20624','20626','20627','20628','20630','20634','20635','20636','20650','20653','20656','20660','20667','20670','20674','20680','20684','20686','20687','20690','20692'],
+      SOME: ['21817','21821','21824','21838','21851','21853','21862','21867','21871'],
+      TALB: ['21601','21612','21625','21647','21654','21657','21662','21663','21665','21671','21673','21676','21679'],
+      WASH: ['21711','21713','21722','21733','21734','21740','21742','21746','21750','21756','21767','21779','21781','21782','21783','21795'],
+      WICO: ['21801','21804','21810','21814','21822','21826','21830','21837','21840','21849','21850','21856','21861','21865','21875'],
+      WORC: ['21811','21813','21841','21842','21843','21851','21863','21864','21872'],
+      BACI: ['21201','21202','21205','21206','21207','21208','21209','21210','21211','21212','21213','21214','21215','21216','21217','21218','21223','21224','21225','21226','21229','21230','21231','21239','21251','21287']
+    };
+
     let leads = [];
     let routeLeads = [];
     let countyZipStats = [];
@@ -785,14 +932,43 @@
       return allFeatures;
     }
 
-    async function loadMarylandZipCodes() {
+    function renderZipOptions(sourceLabel, stats, counted = false) {
+      const county = document.getElementById('apiCounty').value.trim();
+      const countyName = (MD_COUNTIES.find(c => c[0] === county) || [county, county])[1];
+      const zipExplorer = document.getElementById('zipExplorer');
+      const multi = document.getElementById('apiZipMulti');
+
+      countyZipStats = stats;
+      multi.innerHTML = stats.length
+        ? stats.map(z => `<option value="${escapeAttr(z.zip)}">${escapeHtml(z.zip)}${counted ? ` — ${z.count} matching homes` : ''}</option>`).join('')
+        : '<option value="">No ZIPs found</option>';
+
+      zipExplorer.classList.remove('hidden');
+      zipExplorer.innerHTML = `
+        <div class="section-note"><strong>${escapeHtml(countyName)} ZIP Coverage:</strong> ${sourceLabel}. Found ${stats.length} ZIP codes. Select multiple ZIPs above, then click Pull Selected Leads. ${counted ? 'Counts came from a Maryland API scan.' : 'For exact counts, use Deep Scan ZIP Counts.'}</div>
+        <div class="table-wrap" style="max-height:260px"><table><thead><tr><th>ZIP</th><th>${counted ? 'Matching Homes Scanned' : 'Status'}</th><th>Action</th></tr></thead><tbody>
+          ${stats.map(z => `<tr><td><strong>${escapeHtml(z.zip)}</strong></td><td>${counted ? z.count : '<span class="zip-count-pill">Ready</span>'}</td><td><button class="light" onclick="selectApiZip('${escapeAttr(z.zip)}')">Use Only This ZIP</button></td></tr>`).join('')}
+        </tbody></table></div>`;
+    }
+
+    function loadMarylandZipCodes() {
       const county = document.getElementById('apiCounty').value.trim();
       const status = document.getElementById('apiStatus');
-      const zipExplorer = document.getElementById('zipExplorer');
-      if (!county) return alert('Choose a county first, then click Show ZIPs in County.');
+      if (!county) return alert('Choose a county first, then click Show ZIPs Fast.');
+
+      const zips = MD_COUNTY_ZIPS[county] || [];
+      const stats = zips.map(zip => ({ zip, count: 0 }));
+      renderZipOptions('Fast ZIP list loaded instantly from the built-in Maryland county ZIP library', stats, false);
+      status.innerHTML = `<strong>Fast ZIP mode ready.</strong> Loaded ${stats.length} ZIP codes instantly. Select the ZIPs you want, then pull leads.`;
+    }
+
+    async function deepScanMarylandZipCodes() {
+      const county = document.getElementById('apiCounty').value.trim();
+      const status = document.getElementById('apiStatus');
+      if (!county) return alert('Choose a county first, then click Deep Scan ZIP Counts.');
 
       try {
-        status.textContent = 'Loading ZIP codes for selected county and year range...';
+        status.textContent = 'Deep scanning ZIP counts from Maryland Parcel Points. This may take longer...';
         const where = buildMarylandWhereClause({ zips: [] });
         const batchSize = 2000;
         const maxScan = 50000;
@@ -800,7 +976,7 @@
         const zipCounts = new Map();
 
         while (offset < maxScan) {
-          status.textContent = `Scanning county records ${offset + 1} to ${offset + batchSize} for ZIP codes...`;
+          status.textContent = `Deep scanning county records ${offset + 1} to ${offset + batchSize} for ZIP counts...`;
           const res = await fetch(buildMarylandZipLookupUrl(where, offset, batchSize));
           if (!res.ok) throw new Error(`Maryland service returned ${res.status}`);
           const data = await res.json();
@@ -818,26 +994,15 @@
           if (features.length < batchSize) break;
         }
 
-        countyZipStats = Array.from(zipCounts.entries())
+        const stats = Array.from(zipCounts.entries())
           .map(([zip, count]) => ({ zip, count }))
           .sort((a,b) => b.count - a.count || a.zip.localeCompare(b.zip));
 
-        const countyName = (MD_COUNTIES.find(c => c[0] === county) || [county, county])[1];
-        const multi = document.getElementById('apiZipMulti');
-        multi.innerHTML = countyZipStats.length
-          ? countyZipStats.map(z => `<option value="${escapeAttr(z.zip)}">${escapeHtml(z.zip)} — ${z.count} matching homes</option>`).join('')
-          : '<option value="">No ZIPs found</option>';
-
-        zipExplorer.classList.remove('hidden');
-        zipExplorer.innerHTML = `
-          <div class="section-note"><strong>${escapeHtml(countyName)} ZIP Coverage:</strong> Found ${countyZipStats.length} ZIP codes with matching filters. Select multiple ZIPs above, or click a ZIP below to use only that ZIP.</div>
-          <div class="table-wrap" style="max-height:260px"><table><thead><tr><th>ZIP</th><th>Matching Homes Scanned</th><th>Action</th></tr></thead><tbody>
-            ${countyZipStats.map(z => `<tr><td><strong>${escapeHtml(z.zip)}</strong></td><td>${z.count}</td><td><button class="light" onclick="selectApiZip('${escapeAttr(z.zip)}')">Use Only This ZIP</button></td></tr>`).join('')}
-          </tbody></table></div>`;
-        status.textContent = countyZipStats.length ? `Found ${countyZipStats.length} ZIP codes. Select one or multiple ZIPs above.` : 'No ZIPs found. Try widening the year range or switching Residential Filter to All property types.';
+        renderZipOptions('Deep scan complete', stats, true);
+        status.textContent = stats.length ? `Deep scan found ${stats.length} ZIP codes with matching homes.` : 'No ZIPs found. Try widening the year range or switching Residential Filter to All property types.';
       } catch (err) {
         console.error(err);
-        status.innerHTML = `<strong style="color:#b91c1c">Could not load ZIPs.</strong> ${escapeHtml(err.message)}<br><br>Click Preview Query and open the test query to see the raw Maryland response.`;
+        status.innerHTML = `<strong style="color:#b91c1c">Deep scan failed.</strong> ${escapeHtml(err.message)}<br><br>Fast ZIP mode still works. Select ZIPs from Show ZIPs Fast and pull leads.`;
       }
     }
 
