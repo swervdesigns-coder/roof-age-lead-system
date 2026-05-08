@@ -792,7 +792,6 @@
     }
 
     async function loadMarylandZipCodes() {
-      const county = document.geasync function loadMarylandZipCodes() {
       const county = document.getElementById('apiCounty').value.trim();
       const status = document.getElementById('apiStatus');
       const zipExplorer = document.getElementById('zipExplorer');
@@ -841,7 +840,11 @@
         console.error(err);
         status.innerHTML = `<strong style="color:#b91c1c">Could not load ZIPs.</strong> ${escapeHtml(err.message)}<br><br><strong>Quick test:</strong> click Preview Query, then Open test query. If it opens JSON, the Maryland service is reachable. If it says CORS/network, we need the Vercel API proxy version.`;
       }
-    }ent.getElementById('apiStatus').textContent = `ZIP ${zip} selected. Click Pull Leads.`;
+    }
+
+    function selectApiZip(zip) {
+      document.getElementById('apiZip').value = zip;
+      document.getElementById('apiStatus').textContent = `ZIP ${zip} selected. Click Pull Leads.`;
     }
 
     async function pullTopZipRoutes() {
