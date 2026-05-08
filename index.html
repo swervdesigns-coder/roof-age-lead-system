@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simple Solutions | Roof Age Lead System</title>
+  <style>
+    :root {
+      --maroon: #7a0f1b;
+      --maroon-dark: #4f0911;
+      --black: #111111;
+      --soft-black: #202124;
+      --gray: #f4f5f7;
+      --gray-2: #e7e9ee;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --green: #15803d;
+      --yellow: #b45309;
+      --red: #b91c1c;
+      --blue: #1d4ed8;
+      --white: #ffffff;
+      --shadow: 0 14px 35px rgba(0,0,0,.10);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 55%, #eceff3 100%);
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--black), var(--maroon-dark));
+      color: white;
+      padding: 28px 22px;
+      border-bottom: 5px solid var(--maroon);
+    }
+
+    .header-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: center;
+    }
+
+    h1 { margin: 0 0 6px; font-size: 30px; letter-spacing: -0.5px; }
+    .subtitle { color: #f3d5d9; margin: 0; font-size: 15px; line-height: 1.4; }
+
+    .brand-pill {
+      border: 1px solid rgba(255,255,255,.25);
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    main {
+      max-width: 1440px;
+      margin: 22px auto 60px;
+      padding: 0 18px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .card {
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(17,17,17,.07);
+      overflow: hidden;
+    }
+
+    .card h2, .card h3 {
+      margin: 0;
+      color: var(--black);
+    }
+
+    .card-head {
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid var(--gray-2);
+      background: linear-gradient(180deg, #fff, #fbfbfc);
+    }
+
+    .card-body { padding: 18px; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      margin: 12px 0 6px;
+      color: #374151;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      padding: 11px 12px;
+      font-size: 14px;
+      outline: none;
+      background: white;
+    }
+
+    textarea { min-height: 90px; resize: vertical; }
+    input:focus, select:focus, textarea:focus { border-color: var(--maroon); box-shadow: 0 0 0 3px rgba(122,15,27,.12); }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+    .btns { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    button, .button-link {
+      border: 0;
+      border-radius: 12px;
+      padding: 11px 14px;
+      font-weight: 800;
+      cursor: pointer;
+      font-size: 14px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+    }
+
+    .primary { background: var(--maroon); color: white; }
+    .primary:hover { background: var(--maroon-dark); }
+    .dark { background: #111; color: white; }
+    .light { background: #eef0f4; color: #111; }
+    .blue { background: var(--blue); color: white; }
+    .green { background: var(--green); color: white; }
+    .danger { background: var(--red); color: white; }
+
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 7px;
+      line-height: 1.35;
+    }
+
+    .dropzone {
+      border: 2px dashed #c7cbd3;
+      border-radius: 18px;
+      padding: 18px;
+      text-align: center;
+      background: #fafafa;
+      transition: .2s ease;
+    }
+    .dropzone.dragover { border-color: var(--maroon); background: #fff5f6; }
+    .dropzone strong { color: var(--maroon); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(130px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .stat {
+      background: white;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(17,17,17,.06);
+    }
+    .stat small { display: block; color: var(--muted); font-weight: 700; margin-bottom: 5px; }
+    .stat b { font-size: 27px; color: var(--black); }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1.5fr repeat(4, minmax(130px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .tab {
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: #edf0f5;
+      font-weight: 800;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+    .tab.active { background: var(--maroon); color: white; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      min-width: 980px;
+    }
+
+    th, td {
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 10px 9px;
+      vertical-align: top;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: #111;
+      color: white;
+      z-index: 1;
+      font-size: 12px;
+    }
+
+    .table-wrap {
+      max-height: 560px;
+      overflow: auto;
+      border-radius: 14px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 5px 9px;
+      font-weight: 800;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .hot { background: #fee2e2; color: var(--red); }
+    .warm { background: #fef3c7; color: var(--yellow); }
+    .prime { background: #dcfce7; color: var(--green); }
+    .cold { background: #e5e7eb; color: #374151; }
+    .manual { background: #dbeafe; color: var(--blue); }
+
+    .mini-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .mini-actions button, .mini-actions a {
+      font-size: 12px;
+      padding: 7px 9px;
+      border-radius: 9px;
+    }
+
+    .section-note {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-radius: 14px;
+      padding: 12px;
+      font-size: 13px;
+      color: #7c2d12;
+      line-height: 1.4;
+      margin-bottom: 12px;
+    }
+
+    .map-box {
+      height: 420px;
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 16px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .neighborhood-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 10px;
+      background: #fff;
+    }
+    .neighborhood-card h3 { font-size: 16px; margin-bottom: 5px; }
+    .neighborhood-meta { color: var(--muted); font-size: 13px; margin-bottom: 10px; }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      margin-top: 16px;
+    }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 1100px) {
+      .grid { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .toolbar { grid-template-columns: 1fr 1fr; }
+      .header-inner { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div>
+        <h1>Roof Age Lead System</h1>
+        <p class="subtitle">Simple local tool for identifying older homes, scoring roof opportunities, grouping neighborhoods, and building door-knocking routes.</p>
+      </div>
+      <div class="brand-pill">Simple Solutions Contracting</div>
+    </div>
+  </header>
+
+  <main>
+    <div class="stats">
+      <div class="stat"><small>Total Leads</small><b id="statTotal">0</b></div>
+      <div class="stat"><small>Hot Leads</small><b id="statHot">0</b></div>
+      <div class="stat"><small>Prime 10–20 Yrs</small><b id="statPrime">0</b></div>
+      <div class="stat"><small>20+ Yrs</small><b id="statOld">0</b></div>
+      <div class="stat"><small>Target Neighborhoods</small><b id="statNeighborhoods">0</b></div>
+    </div>
+
+    <div class="grid">
+      <aside class="card">
+        <div class="card-head">
+          <h2>Lead Builder</h2>
+        </div>
+        <div class="card-body">
+          <div class="section-note">
+            Import a CSV from SDAT/county data, Regrid, PropStream, or your own spreadsheet. Best columns: address, city, state, zip, year built, owner, subdivision/neighborhood.
+          </div>
+
+          <h3>Pull Maryland Property Data</h3>
+          <div class="section-note">
+            This pulls smaller batches directly from Maryland's Parcel Points ArcGIS service, so you do not have to download the full statewide CSV.
+          </div>
+          <div class="row">
+            <div>
+              <label>ZIP Code</label>
+              <input id="apiZip" placeholder="20678" />
+            </div>
+            <div>
+              <label>Max Records</label>
+              <input id="apiMax" type="number" value="1000" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label>Year Built From</label>
+              <input id="apiYearFrom" type="number" value="2005" />
+            </div>
+            <div>
+              <label>Year Built To</label>
+              <input id="apiYearTo" type="number" value="2016" />
+            </div>
+          </div>
+          <label>Residential Filter</label>
+          <select id="apiResidentialOnly">
+            <option value="yes">Residential only / best effort</option>
+            <option value="no">All property types</option>
+          </select>
+          <div class="btns">
+            <button class="primary" onclick="pullMarylandPropertyData()">Pull Leads From Maryland</button>
+            <button class="light" onclick="previewMarylandQuery()">Preview Query</button>
+          </div>
+          <div id="apiStatus" class="hint">Ready to pull by ZIP and year built.</div>
+
+          <hr style="border:0;border-top:1px solid #e5e7eb;margin:18px 0" />
+
+          <div id="dropzone" class="dropzone">
+            <strong>Drop CSV here</strong><br />
+            or choose a file below
+            <input id="csvFile" type="file" accept=".csv" style="margin-top:12px" />
+          </div>
+
+          <div class="btns">
+            <button class="dark" onclick="downloadTemplate()">Download CSV Template</button>
+            <button class="light" onclick="loadDemoData()">Load Demo Data</button>
+          </div>
+
+          <hr style="border:0;border-top:1px solid #e5e7eb;margin:18px 0" />
+
+          <h3>Add One Lead Manually</h3>
+          <label>Property Address</label>
+          <input id="mAddress" placeholder="123 Main St" />
+          <div class="row">
+            <div>
+              <label>City</label>
+              <input id="mCity" placeholder="Prince Frederick" />
+            </div>
+            <div>
+              <label>ZIP</label>
+              <input id="mZip" placeholder="20678" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label>Year Built</label>
+              <input id="mYear" type="number" placeholder="2008" />
+            </div>
+            <div>
+              <label>Neighborhood</label>
+              <input id="mNeighborhood" placeholder="Subdivision" />
+            </div>
+          </div>
+          <label>Owner Name</label>
+          <input id="mOwner" placeholder="Optional" />
+          <label>Notes</label>
+          <textarea id="mNotes" placeholder="3-tab roof, algae streaking, nearby roof replacements, etc."></textarea>
+          <button class="primary" style="width:100%;margin-top:12px" onclick="addManualLead()">Add Lead</button>
+
+          <hr style="border:0;border-top:1px solid #e5e7eb;margin:18px 0" />
+
+          <h3>Scoring Settings</h3>
+          <div class="row">
+            <div>
+              <label>Prime Minimum Age</label>
+              <input id="minAge" type="number" value="10" onchange="recalculate()" />
+            </div>
+            <div>
+              <label>Prime Maximum Age</label>
+              <input id="maxAge" type="number" value="20" onchange="recalculate()" />
+            </div>
+          </div>
+          <label>Hot Lead Score Minimum</label>
+          <input id="hotScore" type="number" value="8" onchange="recalculate()" />
+          <label>Neighborhood Minimum Homes</label>
+          <input id="clusterMin" type="number" value="8" onchange="renderAll()" />
+          <div class="hint">Tip: 8+ matching homes on nearby streets is usually enough to justify a door-knocking route or postcard drop.</div>
+
+          <div class="btns">
+            <button class="green" onclick="exportCSV(filteredLeads(), 'roof-age-leads-filtered.csv')">Export Filtered CSV</button>
+            <button class="blue" onclick="copyJobNimbusImport()">Copy JobNimbus Notes</button>
+            <button class="danger" onclick="clearAll()">Clear All</button>
+          </div>
+
+          <p class="footer-note"><strong>Compliance note:</strong> This tool is for research, mailers, route planning, and door knocking. Do not cold text marketing leads unless they gave proper SMS consent.</p>
+        </div>
+      </aside>
+
+      <section>
+        <div class="tabs">
+          <div class="tab active" data-tab="leads" onclick="switchTab('leads')">Leads</div>
+          <div class="tab" data-tab="neighborhoods" onclick="switchTab('neighborhoods')">Neighborhoods</div>
+          <div class="tab" data-tab="route" onclick="switchTab('route')">Route Builder</div>
+          <div class="tab" data-tab="campaign" onclick="switchTab('campaign')">Campaign Copy</div>
+        </div>
+
+        <div id="tab-leads" class="card tab-panel">
+          <div class="card-head"><h2>Lead Table</h2></div>
+          <div class="card-body">
+            <div class="toolbar">
+              <input id="search" placeholder="Search address, owner, ZIP, neighborhood..." oninput="renderAll()" />
+              <select id="filterPriority" onchange="renderAll()">
+                <option value="all">All Priorities</option>
+                <option value="Hot">Hot</option>
+                <option value="Prime">Prime</option>
+                <option value="Warm">Warm</option>
+                <option value="Cold">Cold</option>
+              </select>
+              <input id="filterZip" placeholder="ZIP" oninput="renderAll()" />
+              <input id="filterMinScore" type="number" placeholder="Min Score" oninput="renderAll()" />
+              <select id="sortBy" onchange="renderAll()">
+                <option value="scoreDesc">Score High → Low</option>
+                <option value="ageDesc">Age Old → New</option>
+                <option value="zipAsc">ZIP</option>
+                <option value="neighborhoodAsc">Neighborhood</option>
+              </select>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Priority</th>
+                    <th>Score</th>
+                    <th>Address</th>
+                    <th>Year</th>
+                    <th>Age</th>
+                    <th>ZIP</th>
+                    <th>Neighborhood</th>
+                    <th>Owner</th>
+                    <th>Notes</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="leadRows"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-neighborhoods" class="card tab-panel hidden">
+          <div class="card-head"><h2>Neighborhood Targets</h2></div>
+          <div class="card-body">
+            <div id="neighborhoodList"></div>
+          </div>
+        </div>
+
+        <div id="tab-route" class="card tab-panel hidden">
+          <div class="card-head"><h2>Door-Knocking Route Builder</h2></div>
+          <div class="card-body">
+            <div class="row-3">
+              <div>
+                <label>Route ZIP</label>
+                <input id="routeZip" placeholder="20678" />
+              </div>
+              <div>
+                <label>Max Stops</label>
+                <input id="routeMax" type="number" value="20" />
+              </div>
+              <div>
+                <label>Minimum Score</label>
+                <input id="routeMinScore" type="number" value="5" />
+              </div>
+            </div>
+            <div class="btns">
+              <button class="primary" onclick="buildRoute()">Build Route</button>
+              <button class="light" onclick="exportCSV(routeLeads, 'roof-age-route.csv')">Export Route CSV</button>
+            </div>
+            <div id="routeOutput" style="margin-top:16px"></div>
+          </div>
+        </div>
+
+        <div id="tab-campaign" class="card tab-panel hidden">
+          <div class="card-head"><h2>Campaign Copy Generator</h2></div>
+          <div class="card-body">
+            <label>Choose Campaign Angle</label>
+            <select id="campaignType" onchange="generateCampaignCopy()">
+              <option value="inspection">Free Roof Age & Condition Check</option>
+              <option value="maintenance">Roof Tune-Up / Maintenance</option>
+              <option value="documentation">Photo Documentation / Proof of Service</option>
+              <option value="replacement">Replacement Readiness</option>
+            </select>
+            <label>ZIP / Area</label>
+            <input id="campaignArea" placeholder="Prince Frederick / 20678" oninput="generateCampaignCopy()" />
+            <div class="btns">
+              <button class="primary" onclick="generateCampaignCopy()">Generate Copy</button>
+              <button class="light" onclick="copyCampaignCopy()">Copy Copy</button>
+            </div>
+            <label>Output</label>
+            <textarea id="campaignOutput" style="min-height:260px"></textarea>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const CURRENT_YEAR = new Date().getFullYear();
+    const MD_PROPERTY_LAYER_URL = 'https://mdgeodata.md.gov/imap/rest/services/PlanningCadastre/MD_PropertyData/MapServer/0/query';
+    let leads = [];
+    let routeLeads = [];
+
+    const normalize = value => String(value ?? '').trim();
+    const cleanHeader = h => normalize(h).toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    function parseCSV(text) {
+      const rows = [];
+      let row = [], current = '', inQuotes = false;
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i], n = text[i + 1];
+        if (c === '"' && inQuotes && n === '"') { current += '"'; i++; }
+        else if (c === '"') inQuotes = !inQuotes;
+        else if (c === ',' && !inQuotes) { row.push(current); current = ''; }
+        else if ((c === '\n' || c === '\r') && !inQuotes) {
+          if (current || row.length) { row.push(current); rows.push(row); row = []; current = ''; }
+          if (c === '\r' && n === '\n') i++;
+        } else current += c;
+      }
+      if (current || row.length) { row.push(current); rows.push(row); }
+      return rows.filter(r => r.some(cell => normalize(cell)));
+    }
+
+    function findValue(obj, keys) {
+      for (const key of keys) {
+        const clean = cleanHeader(key);
+        if (obj[clean] !== undefined) return normalize(obj[clean]);
+      }
+      return '';
+    }
+
+    function leadFromObject(obj) {
+      const address = findValue(obj, ['address','property address','situs address','street address','site address','location address']);
+      const city = findValue(obj, ['city','property city','situs city']);
+      const state = findValue(obj, ['state','property state','situs state']) || 'MD';
+      const zip = findValue(obj, ['zip','zipcode','postal code','property zip','situs zip']);
+      const yearBuiltRaw = findValue(obj, ['year built','yearbuilt','yr built','built year','construction year']);
+      const owner = findValue(obj, ['owner','owner name','name','taxpayer name']);
+      const neighborhood = findValue(obj, ['neighborhood','subdivision','subdivision name','community','plat','development']);
+      const notes = findValue(obj, ['notes','note','comments']);
+      return createLead({ address, city, state, zip, yearBuilt: parseInt(yearBuiltRaw, 10), owner, neighborhood, notes });
+    }
+
+    function leadFromMarylandFeature(feature) {
+      const a = feature.attributes || {};
+      const premiseAddress = [a.PREMSNUM, a.PREMSDIR, a.PREMSNAM, a.PREMSTYP].filter(Boolean).join(' ').trim();
+      const address = a.ADDRESS || premiseAddress;
+      const city = a.PREMCITY || a.CITY || '';
+      const zip = a.PREMZIP || a.ZIPCODE || '';
+      const yearBuilt = parseInt(a.YEARBLT, 10);
+      const neighborhood = a.DESCSUBD || a.DESCTOWN || a.PREMSTYP || '';
+      const style = a.DESCSTYL ? `Style: ${a.DESCSTYL}` : '';
+      const bldg = a.DESCBLDG ? `Building: ${a.DESCBLDG}` : '';
+      const sqft = a.SQFTSTRC ? `Sq Ft: ${a.SQFTSTRC}` : '';
+      const landUse = a.DESCLU ? `Land Use: ${a.DESCLU}` : '';
+      const acct = a.ACCTID ? `SDAT Acct: ${a.ACCTID}` : '';
+      const sdatUrl = a.SDATWEBADR ? `SDAT URL: ${a.SDATWEBADR}` : '';
+      const notes = [landUse, style, bldg, sqft, acct, sdatUrl].filter(Boolean).join(' | ');
+      const lead = createLead({ address, city, state: 'MD', zip, yearBuilt, owner: '', neighborhood, notes });
+      lead.source = 'Maryland Parcel Points';
+      lead.lat = feature.geometry?.y || '';
+      lead.lng = feature.geometry?.x || '';
+      return lead;
+    }
+
+    function createLead({ address, city, state='MD', zip, yearBuilt, owner='', neighborhood='', notes='' }) {
+      const age = Number.isFinite(yearBuilt) ? CURRENT_YEAR - yearBuilt : 0;
+      const fullAddress = [address, city, state, zip].filter(Boolean).join(', ');
+      return {
+        id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2),
+        address: normalize(address),
+        city: normalize(city),
+        state: normalize(state) || 'MD',
+        zip: normalize(zip),
+        yearBuilt: Number.isFinite(yearBuilt) ? yearBuilt : '',
+        age,
+        owner: normalize(owner),
+        neighborhood: normalize(neighborhood) || deriveNeighborhood(address),
+        notes: normalize(notes),
+        fullAddress,
+        score: 0,
+        priority: 'Cold'
+      };
+    }
+
+    function deriveNeighborhood(address) {
+      const parts = normalize(address).split(' ');
+      return parts.length > 2 ? parts.slice(-2).join(' ') : 'Unknown';
+    }
+
+    function scoreLead(lead) {
+      const minAge = parseInt(document.getElementById('minAge').value, 10) || 10;
+      const maxAge = parseInt(document.getElementById('maxAge').value, 10) || 20;
+      const hotScore = parseInt(document.getElementById('hotScore').value, 10) || 8;
+      let score = 0;
+
+      if (lead.age >= minAge && lead.age <= maxAge) score += 4;
+      if (lead.age > maxAge) score += 6;
+      if (lead.age >= 15 && lead.age <= 20) score += 2;
+      if (lead.age > 20) score += 2;
+      if (lead.notes.toLowerCase().includes('3-tab') || lead.notes.toLowerCase().includes('3 tab')) score += 2;
+      if (lead.notes.toLowerCase().includes('algae') || lead.notes.toLowerCase().includes('streak')) score += 1;
+      if (lead.notes.toLowerCase().includes('missing') || lead.notes.toLowerCase().includes('repair')) score += 2;
+      if (lead.neighborhood && lead.neighborhood !== 'Unknown') score += 1;
+
+      lead.score = score;
+      if (score >= hotScore) lead.priority = 'Hot';
+      else if (lead.age >= minAge && lead.age <= maxAge) lead.priority = 'Prime';
+      else if (score >= 5) lead.priority = 'Warm';
+      else lead.priority = 'Cold';
+      return lead;
+    }
+
+    function recalculate() {
+      leads = leads.map(scoreLead);
+      renderAll();
+    }
+
+    function handleCSV(text) {
+      const parsed = parseCSV(text);
+      if (parsed.length < 2) return alert('CSV looks empty or invalid.');
+      const headers = parsed[0].map(cleanHeader);
+      const newLeads = parsed.slice(1).map(row => {
+        const obj = {};
+        headers.forEach((h, i) => obj[h] = row[i]);
+        return leadFromObject(obj);
+      }).filter(l => l.address && l.yearBuilt);
+      leads = [...leads, ...newLeads].map(scoreLead);
+      renderAll();
+      alert(`Imported ${newLeads.length} usable leads.`);
+    }
+
+    function buildMarylandWhereClause() {
+      const zip = document.getElementById('apiZip').value.trim();
+      const from = parseInt(document.getElementById('apiYearFrom').value, 10);
+      const to = parseInt(document.getElementById('apiYearTo').value, 10);
+      const residentialOnly = document.getElementById('apiResidentialOnly').value === 'yes';
+      const parts = [];
+
+      if (zip) parts.push(`(PREMZIP = '${zip.replace(/'/g, "''")}' OR ZIPCODE = '${zip.replace(/'/g, "''")}')`);
+      if (Number.isFinite(from)) parts.push(`YEARBLT >= '${from}'`);
+      if (Number.isFinite(to)) parts.push(`YEARBLT <= '${to}'`);
+      parts.push(`YEARBLT IS NOT NULL`);
+      parts.push(`ADDRESS IS NOT NULL`);
+      if (residentialOnly) parts.push(`(DESCLU LIKE '%Residential%' OR DESCBLDG LIKE '%Residential%' OR DESCSTYL IS NOT NULL)`);
+
+      return parts.length ? parts.join(' AND ') : '1=1';
+    }
+
+    function previewMarylandQuery() {
+      const where = buildMarylandWhereClause();
+      const url = buildMarylandUrl(where, 0, 25);
+      document.getElementById('apiStatus').innerHTML = `<strong>Query Preview:</strong><br><code style="word-break:break-all">${escapeHtml(where)}</code><br><br><a target="_blank" href="${url}">Open test query</a>`;
+    }
+
+    function buildMarylandUrl(where, offset, count) {
+      const params = new URLSearchParams({
+        f: 'json',
+        where,
+        outFields: 'ACCTID,ADDRESS,CITY,ZIPCODE,PREMSNUM,PREMSDIR,PREMSNAM,PREMSTYP,PREMCITY,PREMZIP,YEARBLT,DESCSUBD,DESCTOWN,DESCLU,SQFTSTRC,DESCSTYL,DESCBLDG,SDATWEBADR',
+        returnGeometry: 'true',
+        outSR: '4326',
+        orderByFields: 'YEARBLT ASC, PREMZIP ASC',
+        resultOffset: String(offset),
+        resultRecordCount: String(count)
+      });
+      return `${MD_PROPERTY_LAYER_URL}?${params.toString()}`;
+    }
+
+    async function pullMarylandPropertyData() {
+      const status = document.getElementById('apiStatus');
+      const where = buildMarylandWhereClause();
+      const maxWanted = Math.max(1, parseInt(document.getElementById('apiMax').value, 10) || 1000);
+      const batchSize = Math.min(2000, maxWanted);
+      let offset = 0;
+      let imported = 0;
+      let allNew = [];
+
+      status.textContent = 'Connecting to Maryland Parcel Points...';
+
+      try {
+        while (imported < maxWanted) {
+          const count = Math.min(batchSize, maxWanted - imported);
+          const url = buildMarylandUrl(where, offset, count);
+          status.textContent = `Pulling records ${offset + 1} to ${offset + count}...`;
+          const res = await fetch(url);
+          if (!res.ok) throw new Error(`Maryland service returned ${res.status}`);
+          const data = await res.json();
+          if (data.error) throw new Error(data.error.message || 'ArcGIS query error');
+          const features = data.features || [];
+          if (!features.length) break;
+          const batchLeads = features.map(leadFromMarylandFeature).filter(l => l.address && l.yearBuilt);
+          allNew = allNew.concat(batchLeads);
+          imported += features.length;
+          offset += features.length;
+          if (features.length < count) break;
+        }
+
+        const existingKeys = new Set(leads.map(l => `${l.address}|${l.zip}|${l.yearBuilt}`.toLowerCase()));
+        const uniqueNew = allNew.filter(l => {
+          const key = `${l.address}|${l.zip}|${l.yearBuilt}`.toLowerCase();
+          if (existingKeys.has(key)) return false;
+          existingKeys.add(key);
+          return true;
+        });
+
+        leads = [...leads, ...uniqueNew].map(scoreLead);
+        renderAll();
+        status.innerHTML = `<strong>Done.</strong> Pulled ${allNew.length} records and added ${uniqueNew.length} new leads. Duplicates were skipped.`;
+      } catch (err) {
+        console.error(err);
+        status.innerHTML = `<strong style="color:#b91c1c">Could not pull data.</strong> ${escapeHtml(err.message)}<br>Try a smaller ZIP/year range or use the CSV import option.`;
+      }
+    }
+
+    function addManualLead() {
+      const lead = createLead({
+        address: document.getElementById('mAddress').value,
+        city: document.getElementById('mCity').value,
+        zip: document.getElementById('mZip').value,
+        yearBuilt: parseInt(document.getElementById('mYear').value, 10),
+        neighborhood: document.getElementById('mNeighborhood').value,
+        owner: document.getElementById('mOwner').value,
+        notes: document.getElementById('mNotes').value
+      });
+      if (!lead.address || !lead.yearBuilt) return alert('Address and Year Built are required.');
+      leads.push(scoreLead(lead));
+      ['mAddress','mCity','mZip','mYear','mNeighborhood','mOwner','mNotes'].forEach(id => document.getElementById(id).value = '');
+      renderAll();
+    }
+
+    function filteredLeads() {
+      const search = document.getElementById('search').value.toLowerCase();
+      const priority = document.getElementById('filterPriority').value;
+      const zip = document.getElementById('filterZip').value.trim();
+      const minScore = parseInt(document.getElementById('filterMinScore').value, 10);
+      const sortBy = document.getElementById('sortBy').value;
+
+      let result = leads.filter(l => {
+        const haystack = [l.address, l.city, l.zip, l.neighborhood, l.owner, l.notes].join(' ').toLowerCase();
+        return (!search || haystack.includes(search)) &&
+          (priority === 'all' || l.priority === priority) &&
+          (!zip || l.zip.includes(zip)) &&
+          (!Number.isFinite(minScore) || l.score >= minScore);
+      });
+
+      result.sort((a,b) => {
+        if (sortBy === 'scoreDesc') return b.score - a.score;
+        if (sortBy === 'ageDesc') return b.age - a.age;
+        if (sortBy === 'zipAsc') return a.zip.localeCompare(b.zip);
+        if (sortBy === 'neighborhoodAsc') return a.neighborhood.localeCompare(b.neighborhood);
+        return 0;
+      });
+      return result;
+    }
+
+    function renderLeads() {
+      const rows = filteredLeads().map(l => `
+        <tr>
+          <td><span class="badge ${badgeClass(l.priority)}">${l.priority}</span></td>
+          <td><strong>${l.score}</strong></td>
+          <td>${escapeHtml(l.address)}<br><span class="hint">${escapeHtml([l.city,l.state,l.zip].filter(Boolean).join(', '))}</span></td>
+          <td>${l.yearBuilt}</td>
+          <td>${l.age}</td>
+          <td>${escapeHtml(l.zip)}</td>
+          <td>${escapeHtml(l.neighborhood)}</td>
+          <td>${escapeHtml(l.owner)}</td>
+          <td>${escapeHtml(l.notes)}</td>
+          <td>
+            <div class="mini-actions">
+              <a class="button-link blue" target="_blank" href="${mapsLink(l)}">Map</a>
+              <button class="light" onclick="markChecked('${l.id}')">Checked</button>
+              <button class="danger" onclick="deleteLead('${l.id}')">Delete</button>
+            </div>
+          </td>
+        </tr>`).join('');
+      document.getElementById('leadRows').innerHTML = rows || `<tr><td colspan="10">No leads yet. Import a CSV or load demo data.</td></tr>`;
+    }
+
+    function renderStats() {
+      document.getElementById('statTotal').textContent = leads.length;
+      document.getElementById('statHot').textContent = leads.filter(l => l.priority === 'Hot').length;
+      document.getElementById('statPrime').textContent = leads.filter(l => l.age >= 10 && l.age <= 20).length;
+      document.getElementById('statOld').textContent = leads.filter(l => l.age > 20).length;
+      document.getElementById('statNeighborhoods').textContent = getNeighborhoods().length;
+    }
+
+    function getNeighborhoods() {
+      const clusterMin = parseInt(document.getElementById('clusterMin').value, 10) || 8;
+      const groups = {};
+      for (const l of leads) {
+        const key = `${l.zip || 'No ZIP'} | ${l.neighborhood || 'Unknown'}`;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(l);
+      }
+      return Object.entries(groups).map(([key, items]) => {
+        const avgScore = items.reduce((s,l) => s + l.score, 0) / items.length;
+        const hotCount = items.filter(l => l.priority === 'Hot').length;
+        const primeCount = items.filter(l => l.age >= 10 && l.age <= 20).length;
+        return { key, items, avgScore, hotCount, primeCount };
+      }).filter(g => g.items.length >= clusterMin).sort((a,b) => (b.hotCount - a.hotCount) || (b.avgScore - a.avgScore));
+    }
+
+    function renderNeighborhoods() {
+      const html = getNeighborhoods().map(g => {
+        const top = [...g.items].sort((a,b) => b.score - a.score).slice(0, 5);
+        return `<div class="neighborhood-card">
+          <h3>${escapeHtml(g.key)}</h3>
+          <div class="neighborhood-meta">${g.items.length} homes • ${g.hotCount} hot • ${g.primeCount} prime • Avg score ${g.avgScore.toFixed(1)}</div>
+          <div class="mini-actions">
+            <button class="primary" onclick="prefillRoute('${escapeAttr(g.key.split(' | ')[0])}')">Build ZIP Route</button>
+            <button class="light" onclick="exportCSV(leads.filter(l => ('${escapeJs(g.key)}') === (l.zip + ' | ' + l.neighborhood)), 'neighborhood-leads.csv')">Export This Group</button>
+          </div>
+          <div style="margin-top:10px;font-size:13px"><strong>Top homes:</strong> ${top.map(l => escapeHtml(l.address)).join(' • ')}</div>
+        </div>`;
+      }).join('');
+      document.getElementById('neighborhoodList').innerHTML = html || '<p>No target neighborhoods yet. Lower the neighborhood minimum or import more data.</p>';
+    }
+
+    function buildRoute() {
+      const zip = document.getElementById('routeZip').value.trim();
+      const max = parseInt(document.getElementById('routeMax').value, 10) || 20;
+      const minScore = parseInt(document.getElementById('routeMinScore').value, 10) || 0;
+      routeLeads = leads.filter(l => (!zip || l.zip.includes(zip)) && l.score >= minScore)
+        .sort((a,b) => b.score - a.score)
+        .slice(0, max);
+      if (!routeLeads.length) {
+        document.getElementById('routeOutput').innerHTML = '<p>No route leads found. Adjust ZIP or minimum score.</p>';
+        return;
+      }
+      const routeLink = 'https://www.google.com/maps/dir/' + routeLeads.map(l => encodeURIComponent(l.fullAddress || `${l.address}, ${l.city}, ${l.state} ${l.zip}`)).join('/');
+      document.getElementById('routeOutput').innerHTML = `
+        <div class="section-note"><strong>Route ready:</strong> ${routeLeads.length} stops. Google Maps works best with smaller batches, so split into 10–20 stops if needed.</div>
+        <div class="btns"><a class="button-link blue" target="_blank" href="${routeLink}">Open Route in Google Maps</a></div>
+        <div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>#</th><th>Priority</th><th>Score</th><th>Address</th><th>Age</th><th>Notes</th></tr></thead><tbody>
+          ${routeLeads.map((l,i) => `<tr><td>${i+1}</td><td>${l.priority}</td><td>${l.score}</td><td>${escapeHtml(l.fullAddress)}</td><td>${l.age}</td><td>${escapeHtml(l.notes)}</td></tr>`).join('')}
+        </tbody></table></div>`;
+    }
+
+    function generateCampaignCopy() {
+      const type = document.getElementById('campaignType').value;
+      const area = document.getElementById('campaignArea').value || 'your neighborhood';
+      const copy = {
+        inspection: `FREE ROOF AGE & CONDITION CHECK\n\nSimple Solutions Contracting is helping homeowners in ${area} check roofs that may now be 10–20+ years old. Many roofs do not need replacement yet, but pipe boots, flashing, ventilation, shingles, and small leak points should be reviewed before they become expensive.\n\nWe provide photo documentation and a clear explanation of what we find.\n\nCall or text today to schedule your free roof inspection.\nLicensed & Insured | Local Trusted Family Business`,
+        maintenance: `ROOF TUNE-UP NOTICE FOR ${area.toUpperCase()}\n\nHomes built 10–20+ years ago may be due for a roof maintenance check. Simple Solutions Contracting can inspect shingles, exposed nails, pipe boots, flashing, vents, gutters, and possible water entry points.\n\nOur goal is simple: catch small issues before they turn into costly damage.\n\nSchedule your free roof health check today.`,
+        documentation: `PROOF OF SERVICE ROOF DOCUMENTATION\n\nSimple Solutions Contracting is offering homeowners in ${area} a roof condition check with photo documentation. This gives you a clear record of your roof condition, repairs needed, and maintenance items to watch.\n\nGreat for homeowners who want to stay ahead of roof problems and keep a digital record of their home maintenance.\n\nCall or text today for your free roof inspection.`,
+        replacement: `IS YOUR ROOF REACHING REPLACEMENT AGE?\n\nMany homes in ${area} are now reaching the age where shingles, sealants, pipe boots, and flashing start showing wear. That does not always mean you need a new roof today, but it does mean now is the right time to get a professional opinion.\n\nSimple Solutions Contracting provides free roof inspections, honest recommendations, and photo documentation.\n\nCall or text today to schedule.`
+      }[type];
+      document.getElementById('campaignOutput').value = copy;
+    }
+
+    function copyCampaignCopy() {
+      navigator.clipboard.writeText(document.getElementById('campaignOutput').value);
+      alert('Campaign copy copied.');
+    }
+
+    function copyJobNimbusImport() {
+      const text = filteredLeads().map(l => `Roof Age Lead | ${l.fullAddress}\nYear Built: ${l.yearBuilt}\nEstimated Roof/Home Age: ${l.age} years\nPriority: ${l.priority}\nScore: ${l.score}\nNeighborhood: ${l.neighborhood}\nNotes: ${l.notes || 'N/A'}\nRecommended Action: Offer free roof age & condition check with photo documentation.\n`).join('\n---\n');
+      navigator.clipboard.writeText(text || 'No leads selected.');
+      alert('JobNimbus-style notes copied.');
+    }
+
+    function downloadTemplate() {
+      const csv = 'property_address,city,state,zip,year_built,owner_name,neighborhood,notes\n123 Main St,Prince Frederick,MD,20678,2008,John Smith,Sample Estates,3-tab roof / algae streaking\n';
+      downloadText(csv, 'roof-age-lead-template.csv', 'text/csv');
+    }
+
+    function exportCSV(data, filename) {
+      if (!data || !data.length) return alert('Nothing to export.');
+      const headers = ['priority','score','property_address','city','state','zip','year_built','age','owner_name','neighborhood','notes','google_maps'];
+      const rows = data.map(l => [l.priority,l.score,l.address,l.city,l.state,l.zip,l.yearBuilt,l.age,l.owner,l.neighborhood,l.notes,mapsLink(l)]);
+      const csv = [headers, ...rows].map(r => r.map(csvCell).join(',')).join('\n');
+      downloadText(csv, filename, 'text/csv');
+    }
+
+    function loadDemoData() {
+      const demo = [
+        ['101 Barred Owl Way','Prince Frederick','MD','20678',2007,'','Barred Owl Way','3-tab roof / algae streaking'],
+        ['105 Barred Owl Way','Prince Frederick','MD','20678',2008,'','Barred Owl Way','nearby roof replacements'],
+        ['111 Barred Owl Way','Prince Frederick','MD','20678',2006,'','Barred Owl Way','missing shingles visible'],
+        ['118 Barred Owl Way','Prince Frederick','MD','20678',2004,'','Barred Owl Way','older roof / inspect pipe boots'],
+        ['201 Calvert Ridge Dr','Prince Frederick','MD','20678',2011,'','Calvert Ridge',''],
+        ['205 Calvert Ridge Dr','Prince Frederick','MD','20678',2010,'','Calvert Ridge','algae streaks'],
+        ['209 Calvert Ridge Dr','Prince Frederick','MD','20678',2009,'','Calvert Ridge','3-tab roof'],
+        ['213 Calvert Ridge Dr','Prince Frederick','MD','20678',2008,'','Calvert Ridge',''],
+        ['300 Chesapeake Ave','Lusby','MD','20657',2001,'','Chesapeake Ave','older roof / high priority'],
+        ['304 Chesapeake Ave','Lusby','MD','20657',2003,'','Chesapeake Ave','repair history'],
+        ['308 Chesapeake Ave','Lusby','MD','20657',2005,'','Chesapeake Ave','3 tab shingles'],
+        ['312 Chesapeake Ave','Lusby','MD','20657',2006,'','Chesapeake Ave','']
+      ];
+      leads = [...leads, ...demo.map(d => createLead({ address:d[0], city:d[1], state:d[2], zip:d[3], yearBuilt:d[4], owner:d[5], neighborhood:d[6], notes:d[7] }))].map(scoreLead);
+      renderAll();
+    }
+
+    function markChecked(id) {
+      leads = leads.map(l => l.id === id ? { ...l, notes: `${l.notes ? l.notes + ' | ' : ''}Google/drive-by checked` } : l).map(scoreLead);
+      renderAll();
+    }
+
+    function deleteLead(id) {
+      leads = leads.filter(l => l.id !== id);
+      renderAll();
+    }
+
+    function clearAll() {
+      if (!confirm('Clear all leads?')) return;
+      leads = [];
+      routeLeads = [];
+      renderAll();
+      document.getElementById('routeOutput').innerHTML = '';
+    }
+
+    function prefillRoute(zip) {
+      switchTab('route');
+      document.getElementById('routeZip').value = zip;
+      buildRoute();
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+      document.getElementById(`tab-${tab}`).classList.remove('hidden');
+      if (tab === 'campaign') generateCampaignCopy();
+    }
+
+    function renderAll() {
+      renderLeads();
+      renderNeighborhoods();
+      renderStats();
+    }
+
+    function mapsLink(l) {
+      return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(l.fullAddress || `${l.address}, ${l.city}, ${l.state} ${l.zip}`);
+    }
+
+    function badgeClass(priority) {
+      return priority === 'Hot' ? 'hot' : priority === 'Prime' ? 'prime' : priority === 'Warm' ? 'warm' : 'cold';
+    }
+
+    function csvCell(v) {
+      const s = String(v ?? '');
+      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    }
+
+    function downloadText(text, filename, type) {
+      const blob = new Blob([text], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? '').replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+    }
+    function escapeAttr(str) { return escapeHtml(str).replace(/'/g, '&#39;'); }
+    function escapeJs(str) { return String(str ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+
+    document.getElementById('csvFile').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => handleCSV(reader.result);
+      reader.readAsText(file);
+    });
+
+    const dropzone = document.getElementById('dropzone');
+    dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => handleCSV(reader.result);
+      reader.readAsText(file);
+    });
+
+    generateCampaignCopy();
+    renderAll();
+  </script>
+</body>
+</html>
