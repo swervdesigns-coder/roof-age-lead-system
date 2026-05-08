@@ -359,13 +359,23 @@
           </select>
           <div class="row">
             <div>
-              <label>ZIP Code</label>
-              <input id="apiZip" placeholder="20678 or leave blank for county" />
+              <label>ZIP Code Manual Override</label>
+              <input id="apiZip" placeholder="Optional: 20678" />
+              <div class="hint">Use this for one ZIP, or select multiple ZIPs below after clicking Show ZIPs in County.</div>
             </div>
             <div>
-              <label>Max Records</label>
+              <label>Max Records To Load Into App</label>
               <input id="apiMax" type="number" value="1000" />
+              <div class="hint">Keeps the app fast. You can still export larger county pulls in 1,000-row files.</div>
             </div>
+          </div>
+          <label>Selected ZIP Codes</label>
+          <select id="apiZipMulti" multiple size="7" style="min-height:145px">
+            <option value="">Choose a county, then click Show ZIPs in County</option>
+          </select>
+          <div class="btns">
+            <button class="light" onclick="selectAllZipOptions()">Select All ZIPs</button>
+            <button class="light" onclick="clearZipOptions()">Clear ZIPs</button>
           </div>
           <div class="row">
             <div>
@@ -384,8 +394,9 @@
           </select>
           <div class="btns">
             <button class="light" onclick="loadMarylandZipCodes()">Show ZIPs in County</button>
-            <button class="primary" onclick="pullMarylandPropertyData()">Pull Leads</button>
+            <button class="primary" onclick="pullMarylandPropertyData()">Pull Selected Leads</button>
             <button class="dark" onclick="pullTopZipRoutes()">Pull Top ZIPs</button>
+            <button class="green" onclick="downloadCountyBatches()">Download County/ZIP Batches</button>
             <button class="light" onclick="previewMarylandQuery()">Preview Query</button>
           </div>
           <div id="apiStatus" class="hint">Ready to pull by ZIP, county, and year built.</div>
@@ -584,6 +595,7 @@
     let leads = [];
     let routeLeads = [];
     let countyZipStats = [];
+    let lastBatchExportRows = [];
 
     const normalize = value => String(value ?? '').trim();
     const cleanHeader = h => normalize(h).toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -715,9 +727,24 @@
       alert(`Imported ${newLeads.length} usable leads.`);
     }
 
+    function getSelectedApiZips() {
+      const manualZip = document.getElementById('apiZip').value.trim();
+      if (manualZip) return [manualZip];
+      const multi = document.getElementById('apiZipMulti');
+      if (!multi) return [];
+      return Array.from(multi.selectedOptions).map(o => o.value).filter(Boolean);
+    }
+
+    function buildZipWhere(zips) {
+      const cleanZips = (Array.isArray(zips) ? zips : [zips]).map(z => String(z).trim()).filter(Boolean);
+      if (!cleanZips.length) return '';
+      const quoted = cleanZips.map(z => `'${z.replace(/'/g, "''")}'`).join(',');
+      return `((PREMZIP IN (${quoted})) OR (ZIPCODE IN (${quoted})))`;
+    }
+
     function buildMarylandWhereClause(options = {}) {
       const county = options.county ?? document.getElementById('apiCounty').value.trim();
-      const zip = options.zip ?? document.getElementById('apiZip').value.trim();
+      const selectedZips = options.zips ?? (options.zip !== undefined ? [options.zip].filter(Boolean) : getSelectedApiZips());
       const from = parseInt(document.getElementById('apiYearFrom').value, 10);
       const to = parseInt(document.getElementById('apiYearTo').value, 10);
       const residentialOnly = document.getElementById('apiResidentialOnly').value === 'yes';
@@ -728,7 +755,8 @@
         const cNoZero = String(parseInt(c, 10));
         parts.push(`(JURSCODE = '${c}' OR JURSCODE = '${cNoZero}')`);
       }
-      if (zip) parts.push(`(PREMZIP = '${zip.replace(/'/g, "''")}' OR ZIPCODE = '${zip.replace(/'/g, "''")}')`);
+      const zipWhere = buildZipWhere(selectedZips);
+      if (zipWhere) parts.push(zipWhere);
       if (Number.isFinite(from)) parts.push(`YEARBLT >= '${from}'`);
       if (Number.isFinite(to)) parts.push(`YEARBLT <= '${to}'`);
       parts.push(`YEARBLT IS NOT NULL`);
@@ -755,7 +783,24 @@
       const zipExplorer = document.getElementById('zipExplorer');
       zipExplorer.classList.add('hidden');
       zipExplorer.innerHTML = '';
+      countyZipStats = [];
+      const multi = document.getElementById('apiZipMulti');
+      if (multi) multi.innerHTML = '<option value="">Click Show ZIPs in County</option>';
       document.getElementById('apiStatus').textContent = 'County changed. Click “Show ZIPs in County” to see matching ZIPs.';
+    }
+
+    function selectAllZipOptions() {
+      const multi = document.getElementById('apiZipMulti');
+      Array.from(multi.options).forEach(o => { if (o.value) o.selected = true; });
+      document.getElementById('apiZip').value = '';
+      document.getElementById('apiStatus').textContent = `${getSelectedApiZips().length} ZIPs selected.`;
+    }
+
+    function clearZipOptions() {
+      const multi = document.getElementById('apiZipMulti');
+      Array.from(multi.options).forEach(o => o.selected = false);
+      document.getElementById('apiZip').value = '';
+      document.getElementById('apiStatus').textContent = 'ZIP selection cleared.';
     }
 
     function previewMarylandQuery() {
@@ -799,7 +844,7 @@
 
       try {
         status.textContent = 'Loading ZIP codes for selected county and year range...';
-        const where = buildMarylandWhereClause({ zip: '' });
+        const where = buildMarylandWhereClause({ zips: [] });
         const batchSize = 2000;
         const maxScan = 30000;
         let offset = 0;
@@ -830,12 +875,17 @@
 
         const countyName = (MD_COUNTIES.find(c => c[0] === county) || [county, county])[1];
         zipExplorer.classList.remove('hidden');
+        const multi = document.getElementById('apiZipMulti');
+        multi.innerHTML = countyZipStats.length
+          ? countyZipStats.map(z => `<option value="${escapeAttr(z.zip)}">${escapeHtml(z.zip)} — ${z.count} matching homes</option>`).join('')
+          : '<option value="">No ZIPs found</option>';
+
         zipExplorer.innerHTML = `
-          <div class="section-note"><strong>${escapeHtml(countyName)} ZIP Coverage:</strong> Found ${countyZipStats.length} ZIP codes with matching year-built/property filters. Counts are based on scanned matching records. Click a ZIP to load it into the ZIP box, or use Pull Top ZIPs.</div>
+          <div class="section-note"><strong>${escapeHtml(countyName)} ZIP Coverage:</strong> Found ${countyZipStats.length} ZIP codes with matching year-built/property filters. Counts are based on scanned matching records. Select multiple ZIPs from the dropdown, or click a ZIP below to use only that ZIP.</div>
           <div class="table-wrap" style="max-height:260px"><table><thead><tr><th>ZIP</th><th>Matching Homes Scanned</th><th>Action</th></tr></thead><tbody>
-            ${countyZipStats.map(z => `<tr><td><strong>${escapeHtml(z.zip)}</strong></td><td>${z.count}</td><td><button class="light" onclick="selectApiZip('${escapeAttr(z.zip)}')">Use ZIP</button></td></tr>`).join('')}
+            ${countyZipStats.map(z => `<tr><td><strong>${escapeHtml(z.zip)}</strong></td><td>${z.count}</td><td><button class="light" onclick="selectApiZip('${escapeAttr(z.zip)}')">Use Only This ZIP</button></td></tr>`).join('')}
           </tbody></table></div>`;
-        status.textContent = countyZipStats.length ? `Found ${countyZipStats.length} ZIP codes. Review the list below.` : 'No ZIPs found. Try widening the year range or switching Residential Filter to All property types.';
+        status.textContent = countyZipStats.length ? `Found ${countyZipStats.length} ZIP codes. Select one or multiple ZIPs above.` : 'No ZIPs found. Try widening the year range or switching Residential Filter to All property types.';
       } catch (err) {
         console.error(err);
         status.innerHTML = `<strong style="color:#b91c1c">Could not load ZIPs.</strong> ${escapeHtml(err.message)}<br><br><strong>Quick test:</strong> click Preview Query, then Open test query. If it opens JSON, the Maryland service is reachable. If it says CORS/network, we need the Vercel API proxy version.`;
@@ -844,7 +894,9 @@
 
     function selectApiZip(zip) {
       document.getElementById('apiZip').value = zip;
-      document.getElementById('apiStatus').textContent = `ZIP ${zip} selected. Click Pull Leads.`;
+      const multi = document.getElementById('apiZipMulti');
+      Array.from(multi.options).forEach(o => o.selected = false);
+      document.getElementById('apiStatus').textContent = `ZIP ${zip} selected as manual override. Click Pull Selected Leads.`;
     }
 
     async function pullTopZipRoutes() {
@@ -852,18 +904,69 @@
       if (!countyZipStats.length) return;
       const originalZip = document.getElementById('apiZip').value;
       const topZips = countyZipStats.slice(0, 5).map(z => z.zip);
-      const perZipMax = Math.max(100, Math.floor((parseInt(document.getElementById('apiMax').value, 10) || 1000) / topZips.length));
-      const oldMax = document.getElementById('apiMax').value;
-
-      for (const zip of topZips) {
-        document.getElementById('apiZip').value = zip;
-        document.getElementById('apiMax').value = perZipMax;
-        await pullMarylandPropertyData(false);
-      }
-
-      document.getElementById('apiZip').value = originalZip;
-      document.getElementById('apiMax').value = oldMax;
+      const multi = document.getElementById('apiZipMulti');
+      Array.from(multi.options).forEach(o => o.selected = topZips.includes(o.value));
+      document.getElementById('apiZip').value = '';
+      await pullMarylandPropertyData(false);
       document.getElementById('apiStatus').innerHTML = `<strong>Top ZIP pull complete.</strong> Pulled leads from: ${topZips.join(', ')}.`;
+    }
+
+    async function fetchMarylandFeatures(where, maxRecords, progressText = 'Pulling records') {
+      const batchSize = 2000;
+      let offset = 0;
+      let allFeatures = [];
+      const status = document.getElementById('apiStatus');
+      while (offset < maxRecords) {
+        const count = Math.min(batchSize, maxRecords - offset);
+        status.textContent = `${progressText} ${offset + 1} to ${offset + count}...`;
+        const res = await fetch(buildMarylandUrl(where, offset, count));
+        if (!res.ok) throw new Error(`Maryland service returned ${res.status}`);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error.message || 'ArcGIS query error');
+        const features = data.features || [];
+        if (!features.length) break;
+        allFeatures = allFeatures.concat(features);
+        offset += features.length;
+        if (features.length < count) break;
+      }
+      return allFeatures;
+    }
+
+    function chunkArray(items, size) {
+      const chunks = [];
+      for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
+      return chunks;
+    }
+
+    async function downloadCountyBatches() {
+      const status = document.getElementById('apiStatus');
+      const selectedZips = getSelectedApiZips();
+      const county = document.getElementById('apiCounty').value.trim();
+      if (!county && !selectedZips.length) return alert('Choose a county or select ZIPs first.');
+
+      const originalMax = parseInt(document.getElementById('apiMax').value, 10) || 1000;
+      const maxForExport = Math.max(1000, originalMax);
+      const where = buildMarylandWhereClause();
+
+      try {
+        status.textContent = 'Preparing export batches...';
+        const features = await fetchMarylandFeatures(where, maxForExport, 'Preparing export batch records');
+        const exportLeads = features.map(leadFromMarylandFeature).filter(l => l.address && l.yearBuilt).map(scoreLead);
+        if (!exportLeads.length) {
+          status.textContent = 'No leads found to export. Try broader filters.';
+          return;
+        }
+
+        const chunks = chunkArray(exportLeads, 1000);
+        chunks.forEach((chunk, index) => {
+          const zipLabel = selectedZips.length ? selectedZips.join('-') : `county-${county || 'all-md'}`;
+          setTimeout(() => exportCSV(chunk, `roof-age-${zipLabel}-batch-${index + 1}-of-${chunks.length}.csv`), index * 600);
+        });
+        status.innerHTML = `<strong>Export started.</strong> ${exportLeads.length} leads split into ${chunks.length} CSV file(s) of up to 1,000 rows each. Only exported files are downloaded; the full export is not forced into the table.`;
+      } catch (err) {
+        console.error(err);
+        status.innerHTML = `<strong style="color:#b91c1c">Batch export failed.</strong> ${escapeHtml(err.message)}`;
+      }
     }
 
     async function pullMarylandPropertyData(showAlert = true)() {
