@@ -9,8 +9,6 @@
       --maroon: #7a0f1b;
       --maroon-dark: #4f0911;
       --black: #111111;
-      --soft-black: #202124;
-      --gray: #f4f5f7;
       --gray-2: #e7e9ee;
       --text: #1f2937;
       --muted: #6b7280;
@@ -18,11 +16,9 @@
       --yellow: #b45309;
       --red: #b91c1c;
       --blue: #1d4ed8;
-      --white: #ffffff;
       --shadow: 0 14px 35px rgba(0,0,0,.10);
       --radius: 18px;
     }
-
     * { box-sizing: border-box; }
     body {
       margin: 0;
@@ -30,14 +26,12 @@
       color: var(--text);
       background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 55%, #eceff3 100%);
     }
-
     header {
       background: linear-gradient(135deg, var(--black), var(--maroon-dark));
       color: white;
       padding: 28px 22px;
       border-bottom: 5px solid var(--maroon);
     }
-
     .header-inner {
       max-width: 1440px;
       margin: 0 auto;
@@ -46,10 +40,8 @@
       gap: 18px;
       align-items: center;
     }
-
     h1 { margin: 0 0 6px; font-size: 30px; letter-spacing: -0.5px; }
     .subtitle { color: #f3d5d9; margin: 0; font-size: 15px; line-height: 1.4; }
-
     .brand-pill {
       border: 1px solid rgba(255,255,255,.25);
       padding: 10px 14px;
@@ -58,20 +50,8 @@
       font-weight: 700;
       white-space: nowrap;
     }
-
-    main {
-      max-width: 1440px;
-      margin: 22px auto 60px;
-      padding: 0 18px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: 380px 1fr;
-      gap: 18px;
-      align-items: start;
-    }
-
+    main { max-width: 1440px; margin: 22px auto 60px; padding: 0 18px; }
+    .grid { display: grid; grid-template-columns: 410px 1fr; gap: 18px; align-items: start; }
     .card {
       background: white;
       border-radius: var(--radius);
@@ -79,20 +59,13 @@
       border: 1px solid rgba(17,17,17,.07);
       overflow: hidden;
     }
-
-    .card h2, .card h3 {
-      margin: 0;
-      color: var(--black);
-    }
-
+    .card h2, .card h3 { margin: 0; color: var(--black); }
     .card-head {
       padding: 18px 18px 14px;
       border-bottom: 1px solid var(--gray-2);
       background: linear-gradient(180deg, #fff, #fbfbfc);
     }
-
     .card-body { padding: 18px; }
-
     label {
       display: block;
       font-size: 13px;
@@ -100,7 +73,6 @@
       margin: 12px 0 6px;
       color: #374151;
     }
-
     input, select, textarea {
       width: 100%;
       border: 1px solid #d1d5db;
@@ -110,13 +82,11 @@
       outline: none;
       background: white;
     }
-
+    select[multiple] { padding: 8px; }
     textarea { min-height: 90px; resize: vertical; }
     input:focus, select:focus, textarea:focus { border-color: var(--maroon); box-shadow: 0 0 0 3px rgba(122,15,27,.12); }
-
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-
     .btns { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
     button, .button-link {
       border: 0;
@@ -131,7 +101,6 @@
       justify-content: center;
       gap: 7px;
     }
-
     .primary { background: var(--maroon); color: white; }
     .primary:hover { background: var(--maroon-dark); }
     .dark { background: #111; color: white; }
@@ -139,14 +108,12 @@
     .blue { background: var(--blue); color: white; }
     .green { background: var(--green); color: white; }
     .danger { background: var(--red); color: white; }
-
     .hint {
       font-size: 12px;
       color: var(--muted);
       margin-top: 7px;
       line-height: 1.35;
     }
-
     .dropzone {
       border: 2px dashed #c7cbd3;
       border-radius: 18px;
@@ -157,14 +124,12 @@
     }
     .dropzone.dragover { border-color: var(--maroon); background: #fff5f6; }
     .dropzone strong { color: var(--maroon); }
-
     .stats {
       display: grid;
       grid-template-columns: repeat(5, minmax(130px, 1fr));
       gap: 12px;
       margin-bottom: 18px;
     }
-
     .stat {
       background: white;
       border-radius: 16px;
@@ -174,14 +139,12 @@
     }
     .stat small { display: block; color: var(--muted); font-weight: 700; margin-bottom: 5px; }
     .stat b { font-size: 27px; color: var(--black); }
-
     .toolbar {
       display: grid;
       grid-template-columns: 1.5fr repeat(4, minmax(130px, 1fr));
       gap: 10px;
       margin-bottom: 14px;
     }
-
     .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
     .tab {
       padding: 10px 12px;
@@ -192,21 +155,13 @@
       border: 1px solid transparent;
     }
     .tab.active { background: var(--maroon); color: white; }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-      min-width: 980px;
-    }
-
+    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 980px; }
     th, td {
       text-align: left;
       border-bottom: 1px solid #e5e7eb;
       padding: 10px 9px;
       vertical-align: top;
     }
-
     th {
       position: sticky;
       top: 0;
@@ -215,14 +170,12 @@
       z-index: 1;
       font-size: 12px;
     }
-
     .table-wrap {
       max-height: 560px;
       overflow: auto;
       border-radius: 14px;
       border: 1px solid #e5e7eb;
     }
-
     .badge {
       display: inline-flex;
       align-items: center;
@@ -236,15 +189,12 @@
     .warm { background: #fef3c7; color: var(--yellow); }
     .prime { background: #dcfce7; color: var(--green); }
     .cold { background: #e5e7eb; color: #374151; }
-    .manual { background: #dbeafe; color: var(--blue); }
-
     .mini-actions { display: flex; gap: 6px; flex-wrap: wrap; }
     .mini-actions button, .mini-actions a {
       font-size: 12px;
       padding: 7px 9px;
       border-radius: 9px;
     }
-
     .section-note {
       background: #fff7ed;
       border: 1px solid #fed7aa;
@@ -255,19 +205,6 @@
       line-height: 1.4;
       margin-bottom: 12px;
     }
-
-    .map-box {
-      height: 420px;
-      background: #f8fafc;
-      border: 1px solid #e5e7eb;
-      border-radius: 16px;
-      padding: 16px;
-      display: grid;
-      place-items: center;
-      color: var(--muted);
-      text-align: center;
-    }
-
     .neighborhood-card {
       border: 1px solid #e5e7eb;
       border-radius: 16px;
@@ -277,16 +214,8 @@
     }
     .neighborhood-card h3 { font-size: 16px; margin-bottom: 5px; }
     .neighborhood-meta { color: var(--muted); font-size: 13px; margin-bottom: 10px; }
-
-    .footer-note {
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.45;
-      margin-top: 16px;
-    }
-
+    .footer-note { color: var(--muted); font-size: 12px; line-height: 1.45; margin-top: 16px; }
     .hidden { display: none !important; }
-
     @media (max-width: 1100px) {
       .grid { grid-template-columns: 1fr; }
       .stats { grid-template-columns: repeat(2, 1fr); }
@@ -300,7 +229,7 @@
     <div class="header-inner">
       <div>
         <h1>Roof Age Lead System</h1>
-        <p class="subtitle">Simple local tool for identifying older homes, scoring roof opportunities, grouping neighborhoods, and building door-knocking routes.</p>
+        <p class="subtitle">Maryland property lead tool for identifying older homes, scoring roof opportunities, grouping neighborhoods, and building door-knocking routes.</p>
       </div>
       <div class="brand-pill">Simple Solutions Contracting</div>
     </div>
@@ -321,54 +250,53 @@
           <h2>Lead Builder</h2>
         </div>
         <div class="card-body">
-          <div class="section-note">
-            Import a CSV from SDAT/county data, Regrid, PropStream, or your own spreadsheet. Best columns: address, city, state, zip, year built, owner, subdivision/neighborhood.
-          </div>
-
           <h3>Pull Maryland Property Data</h3>
           <div class="section-note">
-            Pull smaller batches directly from Maryland's Parcel Points ArcGIS service. Use ZIP for a tight route, or choose a county to discover every ZIP with matching roof-age leads.
+            Pick a county, show the ZIPs in that county, select one or multiple ZIPs, then pull a controlled number of leads into the app. Use batch export for larger pulls.
           </div>
+
           <label>County</label>
           <select id="apiCounty" onchange="onCountyChange()">
             <option value="">All Maryland / ZIP only</option>
-            <option value="01">Allegany County / 01</option>
-            <option value="02">Anne Arundel County / 02</option>
-            <option value="03">Baltimore County / 03</option>
-            <option value="04">Calvert County / 04</option>
-            <option value="05">Caroline County / 05</option>
-            <option value="06">Carroll County / 06</option>
-            <option value="07">Cecil County / 07</option>
-            <option value="08">Charles County / 08</option>
-            <option value="09">Dorchester County / 09</option>
-            <option value="10">Frederick County / 10</option>
-            <option value="11">Garrett County / 11</option>
-            <option value="12">Harford County / 12</option>
-            <option value="13">Howard County / 13</option>
-            <option value="14">Kent County / 14</option>
-            <option value="15">Montgomery County / 15</option>
-            <option value="16">Prince George's County / 16</option>
-            <option value="17">Queen Anne's County / 17</option>
-            <option value="18">St. Mary's County / 18</option>
-            <option value="19">Somerset County / 19</option>
-            <option value="20">Talbot County / 20</option>
-            <option value="21">Washington County / 21</option>
-            <option value="22">Wicomico County / 22</option>
-            <option value="23">Worcester County / 23</option>
-            <option value="24">Baltimore City / 24</option>
+            <option value="ALLE">Allegany County / ALLE</option>
+            <option value="ANAR">Anne Arundel County / ANAR</option>
+            <option value="BACO">Baltimore County / BACO</option>
+            <option value="CALV">Calvert County / CALV</option>
+            <option value="CARO">Caroline County / CARO</option>
+            <option value="CARR">Carroll County / CARR</option>
+            <option value="CECI">Cecil County / CECI</option>
+            <option value="CHAR">Charles County / CHAR</option>
+            <option value="DORC">Dorchester County / DORC</option>
+            <option value="FRED">Frederick County / FRED</option>
+            <option value="GARR">Garrett County / GARR</option>
+            <option value="HARF">Harford County / HARF</option>
+            <option value="HOWA">Howard County / HOWA</option>
+            <option value="KENT">Kent County / KENT</option>
+            <option value="MONT">Montgomery County / MONT</option>
+            <option value="PRGE">Prince George's County / PRGE</option>
+            <option value="QUEE">Queen Anne's County / QUEE</option>
+            <option value="STMA">St. Mary's County / STMA</option>
+            <option value="SOME">Somerset County / SOME</option>
+            <option value="TALB">Talbot County / TALB</option>
+            <option value="WASH">Washington County / WASH</option>
+            <option value="WICO">Wicomico County / WICO</option>
+            <option value="WORC">Worcester County / WORC</option>
+            <option value="BACI">Baltimore City / BACI</option>
           </select>
+
           <div class="row">
             <div>
-              <label>ZIP Code Manual Override</label>
+              <label>ZIP Manual Override</label>
               <input id="apiZip" placeholder="Optional: 20678" />
-              <div class="hint">Use this for one ZIP, or select multiple ZIPs below after clicking Show ZIPs in County.</div>
+              <div class="hint">Use this for one ZIP, or select multiple ZIPs below.</div>
             </div>
             <div>
               <label>Max Records To Load Into App</label>
               <input id="apiMax" type="number" value="1000" />
-              <div class="hint">Keeps the app fast. You can still export larger county pulls in 1,000-row files.</div>
+              <div class="hint">Keeps the dashboard fast. Use batch export for larger lists.</div>
             </div>
           </div>
+
           <label>Selected ZIP Codes</label>
           <select id="apiZipMulti" multiple size="7" style="min-height:145px">
             <option value="">Choose a county, then click Show ZIPs in County</option>
@@ -377,6 +305,7 @@
             <button class="light" onclick="selectAllZipOptions()">Select All ZIPs</button>
             <button class="light" onclick="clearZipOptions()">Clear ZIPs</button>
           </div>
+
           <div class="row">
             <div>
               <label>Year Built From</label>
@@ -387,11 +316,13 @@
               <input id="apiYearTo" type="number" value="2016" />
             </div>
           </div>
+
           <label>Residential Filter</label>
           <select id="apiResidentialOnly">
             <option value="yes">Residential only / best effort</option>
             <option value="no">All property types</option>
           </select>
+
           <div class="btns">
             <button class="light" onclick="loadMarylandZipCodes()">Show ZIPs in County</button>
             <button class="primary" onclick="pullMarylandPropertyData()">Pull Selected Leads</button>
@@ -403,6 +334,10 @@
           <div id="zipExplorer" class="hidden" style="margin-top:12px"></div>
 
           <hr style="border:0;border-top:1px solid #e5e7eb;margin:18px 0" />
+
+          <div class="section-note">
+            You can also import your own CSV from SDAT/county data, Regrid, PropStream, or a cleaned spreadsheet.
+          </div>
 
           <div id="dropzone" class="dropzone">
             <strong>Drop CSV here</strong><br />
@@ -586,16 +521,15 @@
     const CURRENT_YEAR = new Date().getFullYear();
     const MD_PROPERTY_LAYER_URL = 'https://mdgeodata.md.gov/imap/rest/services/PlanningCadastre/MD_PropertyData/MapServer/0/query';
     const MD_COUNTIES = [
-      ['01','Allegany'], ['02','Anne Arundel'], ['03','Baltimore County'], ['04','Calvert'],
-      ['05','Caroline'], ['06','Carroll'], ['07','Cecil'], ['08','Charles'], ['09','Dorchester'],
-      ['10','Frederick'], ['11','Garrett'], ['12','Harford'], ['13','Howard'], ['14','Kent'],
-      ['15','Montgomery'], ['16','Prince George\'s'], ['17','Queen Anne\'s'], ['18','St. Mary\'s'],
-      ['19','Somerset'], ['20','Talbot'], ['21','Washington'], ['22','Wicomico'], ['23','Worcester'], ['24','Baltimore City']
+      ['ALLE','Allegany'], ['ANAR','Anne Arundel'], ['BACO','Baltimore County'], ['CALV','Calvert'],
+      ['CARO','Caroline'], ['CARR','Carroll'], ['CECI','Cecil'], ['CHAR','Charles'], ['DORC','Dorchester'],
+      ['FRED','Frederick'], ['GARR','Garrett'], ['HARF','Harford'], ['HOWA','Howard'], ['KENT','Kent'],
+      ['MONT','Montgomery'], ['PRGE',"Prince George's"], ['QUEE',"Queen Anne's"], ['STMA',"St. Mary's"],
+      ['SOME','Somerset'], ['TALB','Talbot'], ['WASH','Washington'], ['WICO','Wicomico'], ['WORC','Worcester'], ['BACI','Baltimore City']
     ];
     let leads = [];
     let routeLeads = [];
     let countyZipStats = [];
-    let lastBatchExportRows = [];
 
     const normalize = value => String(value ?? '').trim();
     const cleanHeader = h => normalize(h).toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -644,16 +578,17 @@
       const city = a.PREMCITY || a.CITY || '';
       const zip = a.PREMZIP || a.ZIPCODE || '';
       const yearBuilt = parseInt(a.YEARBLT, 10);
-      const neighborhood = a.DESCSUBD || a.DESCTOWN || a.PREMSTYP || '';
+      const neighborhood = a.DESCSUBD || a.DESCTOWN || '';
+      const owner = [a.OWNADD1, a.OWNADD2].filter(Boolean).join(' ');
+      const landUse = a.DESCLU ? `Land Use: ${a.DESCLU}` : '';
+      const countyCode = a.JURSCODE ? `County: ${a.JURSCODE}` : '';
       const style = a.DESCSTYL ? `Style: ${a.DESCSTYL}` : '';
       const bldg = a.DESCBLDG ? `Building: ${a.DESCBLDG}` : '';
       const sqft = a.SQFTSTRC ? `Sq Ft: ${a.SQFTSTRC}` : '';
-      const landUse = a.DESCLU ? `Land Use: ${a.DESCLU}` : '';
-      const countyCode = a.JURSCODE ? `County Code: ${a.JURSCODE}` : '';
       const acct = a.ACCTID ? `SDAT Acct: ${a.ACCTID}` : '';
       const sdatUrl = a.SDATWEBADR ? `SDAT URL: ${a.SDATWEBADR}` : '';
       const notes = [countyCode, landUse, style, bldg, sqft, acct, sdatUrl].filter(Boolean).join(' | ');
-      const lead = createLead({ address, city, state: 'MD', zip, yearBuilt, owner: '', neighborhood, notes });
+      const lead = createLead({ address, city, state: 'MD', zip, yearBuilt, owner, neighborhood, notes });
       lead.source = 'Maryland Parcel Points';
       lead.lat = feature.geometry?.y || '';
       lead.lng = feature.geometry?.x || '';
@@ -661,18 +596,23 @@
     }
 
     function createLead({ address, city, state='MD', zip, yearBuilt, owner='', neighborhood='', notes='' }) {
-      const age = Number.isFinite(yearBuilt) ? CURRENT_YEAR - yearBuilt : 0;
-      const fullAddress = [address, city, state, zip].filter(Boolean).join(', ');
+      const numericYear = parseInt(yearBuilt, 10);
+      const age = Number.isFinite(numericYear) ? CURRENT_YEAR - numericYear : 0;
+      const cleanAddress = normalize(address);
+      const cleanCity = normalize(city);
+      const cleanState = normalize(state) || 'MD';
+      const cleanZip = normalize(zip).slice(0,5);
+      const fullAddress = [cleanAddress, cleanCity, cleanState, cleanZip].filter(Boolean).join(', ');
       return {
         id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2),
-        address: normalize(address),
-        city: normalize(city),
-        state: normalize(state) || 'MD',
-        zip: normalize(zip),
-        yearBuilt: Number.isFinite(yearBuilt) ? yearBuilt : '',
+        address: cleanAddress,
+        city: cleanCity,
+        state: cleanState,
+        zip: cleanZip,
+        yearBuilt: Number.isFinite(numericYear) ? numericYear : '',
         age,
         owner: normalize(owner),
-        neighborhood: normalize(neighborhood) || deriveNeighborhood(address),
+        neighborhood: normalize(neighborhood) || deriveNeighborhood(cleanAddress),
         notes: normalize(notes),
         fullAddress,
         score: 0,
@@ -729,14 +669,14 @@
 
     function getSelectedApiZips() {
       const manualZip = document.getElementById('apiZip').value.trim();
-      if (manualZip) return [manualZip];
+      if (manualZip) return [manualZip.slice(0,5)];
       const multi = document.getElementById('apiZipMulti');
       if (!multi) return [];
       return Array.from(multi.selectedOptions).map(o => o.value).filter(Boolean);
     }
 
     function buildZipWhere(zips) {
-      const cleanZips = (Array.isArray(zips) ? zips : [zips]).map(z => String(z).trim()).filter(Boolean);
+      const cleanZips = (Array.isArray(zips) ? zips : [zips]).map(z => String(z).trim().slice(0,5)).filter(Boolean);
       if (!cleanZips.length) return '';
       const quoted = cleanZips.map(z => `'${z.replace(/'/g, "''")}'`).join(',');
       return `((PREMZIP IN (${quoted})) OR (ZIPCODE IN (${quoted})))`;
@@ -752,8 +692,7 @@
 
       if (county) {
         const c = county.replace(/'/g, "''");
-        const cNoZero = String(parseInt(c, 10));
-        parts.push(`(JURSCODE = '${c}' OR JURSCODE = '${cNoZero}')`);
+        parts.push(`JURSCODE = '${c}'`);
       }
       const zipWhere = buildZipWhere(selectedZips);
       if (zipWhere) parts.push(zipWhere);
@@ -761,22 +700,9 @@
       if (Number.isFinite(to)) parts.push(`YEARBLT <= '${to}'`);
       parts.push(`YEARBLT IS NOT NULL`);
       parts.push(`ADDRESS IS NOT NULL`);
-      if (residentialOnly) parts.push(`(DESCLU LIKE '%Residential%' OR DESCBLDG LIKE '%Residential%' OR DESCSTYL IS NOT NULL)`);
+      if (residentialOnly) parts.push(`(DESCLU LIKE '%Residential%' OR DESCBLDG LIKE '%Residential%' OR DESCSTYL IS NOT NULL OR RESITYP IS NOT NULL)`);
 
       return parts.length ? parts.join(' AND ') : '1=1';
-    }
-
-    function initCountyDropdown() {
-      const select = document.getElementById('apiCounty');
-      if (!select) return;
-      const hasCounties = Array.from(select.options).some(o => o.value === '04');
-      if (hasCounties) return;
-      MD_COUNTIES.forEach(([code, name]) => {
-        const option = document.createElement('option');
-        option.value = code;
-        option.textContent = code === '24' ? 'Baltimore City / 24' : `${name} County / ${code}`;
-        select.appendChild(option);
-      });
     }
 
     function onCountyChange() {
@@ -786,6 +712,7 @@
       countyZipStats = [];
       const multi = document.getElementById('apiZipMulti');
       if (multi) multi.innerHTML = '<option value="">Click Show ZIPs in County</option>';
+      document.getElementById('apiZip').value = '';
       document.getElementById('apiStatus').textContent = 'County changed. Click “Show ZIPs in County” to see matching ZIPs.';
     }
 
@@ -813,7 +740,7 @@
       const params = new URLSearchParams({
         f: 'json',
         where,
-        outFields: 'JURSCODE,ACCTID,ADDRESS,CITY,ZIPCODE,PREMSNUM,PREMSDIR,PREMSNAM,PREMSTYP,PREMCITY,PREMZIP,YEARBLT,DESCSUBD,DESCTOWN,DESCLU,SQFTSTRC,DESCSTYL,DESCBLDG,SDATWEBADR',
+        outFields: 'OBJECTID,JURSCODE,ACCTID,ADDRESS,CITY,ZIPCODE,OWNADD1,OWNADD2,PREMSNUM,PREMSDIR,PREMSNAM,PREMSTYP,PREMCITY,PREMZIP,YEARBLT,DESCSUBD,DESCTOWN,DESCLU,SQFTSTRC,DESCSTYL,DESCBLDG,SDATWEBADR',
         returnGeometry: 'true',
         outSR: '4326',
         orderByFields: 'PREMZIP ASC, YEARBLT ASC',
@@ -827,7 +754,7 @@
       const params = new URLSearchParams({
         f: 'json',
         where,
-        outFields: 'PREMZIP,ZIPCODE',
+        outFields: 'OBJECTID,PREMZIP,ZIPCODE',
         returnGeometry: 'false',
         orderByFields: 'PREMZIP ASC',
         resultOffset: String(offset),
@@ -836,86 +763,12 @@
       return `${MD_PROPERTY_LAYER_URL}?${params.toString()}`;
     }
 
-    async function loadMarylandZipCodes() {
-      const county = document.getElementById('apiCounty').value.trim();
-      const status = document.getElementById('apiStatus');
-      const zipExplorer = document.getElementById('zipExplorer');
-      if (!county) return alert('Choose a county first, then click Show ZIPs in County.');
-
-      try {
-        status.textContent = 'Loading ZIP codes for selected county and year range...';
-        const where = buildMarylandWhereClause({ zips: [] });
-        const batchSize = 2000;
-        const maxScan = 30000;
-        let offset = 0;
-        const zipCounts = new Map();
-
-        while (offset < maxScan) {
-          status.textContent = `Scanning county records ${offset + 1} to ${offset + batchSize} for ZIP codes...`;
-          const res = await fetch(buildMarylandZipLookupUrl(where, offset, batchSize));
-          if (!res.ok) throw new Error(`Maryland service returned ${res.status}`);
-          const data = await res.json();
-          if (data.error) throw new Error(data.error.message || 'ArcGIS ZIP query error');
-          const features = data.features || [];
-          if (!features.length) break;
-
-          features.forEach(f => {
-            const a = f.attributes || {};
-            const zip = String(a.PREMZIP || a.ZIPCODE || '').trim();
-            if (zip && zip.length >= 5) zipCounts.set(zip.slice(0, 5), (zipCounts.get(zip.slice(0, 5)) || 0) + 1);
-          });
-
-          offset += features.length;
-          if (features.length < batchSize) break;
-        }
-
-        countyZipStats = Array.from(zipCounts.entries())
-          .map(([zip, count]) => ({ zip, count }))
-          .sort((a,b) => b.count - a.count || a.zip.localeCompare(b.zip));
-
-        const countyName = (MD_COUNTIES.find(c => c[0] === county) || [county, county])[1];
-        zipExplorer.classList.remove('hidden');
-        const multi = document.getElementById('apiZipMulti');
-        multi.innerHTML = countyZipStats.length
-          ? countyZipStats.map(z => `<option value="${escapeAttr(z.zip)}">${escapeHtml(z.zip)} — ${z.count} matching homes</option>`).join('')
-          : '<option value="">No ZIPs found</option>';
-
-        zipExplorer.innerHTML = `
-          <div class="section-note"><strong>${escapeHtml(countyName)} ZIP Coverage:</strong> Found ${countyZipStats.length} ZIP codes with matching year-built/property filters. Counts are based on scanned matching records. Select multiple ZIPs from the dropdown, or click a ZIP below to use only that ZIP.</div>
-          <div class="table-wrap" style="max-height:260px"><table><thead><tr><th>ZIP</th><th>Matching Homes Scanned</th><th>Action</th></tr></thead><tbody>
-            ${countyZipStats.map(z => `<tr><td><strong>${escapeHtml(z.zip)}</strong></td><td>${z.count}</td><td><button class="light" onclick="selectApiZip('${escapeAttr(z.zip)}')">Use Only This ZIP</button></td></tr>`).join('')}
-          </tbody></table></div>`;
-        status.textContent = countyZipStats.length ? `Found ${countyZipStats.length} ZIP codes. Select one or multiple ZIPs above.` : 'No ZIPs found. Try widening the year range or switching Residential Filter to All property types.';
-      } catch (err) {
-        console.error(err);
-        status.innerHTML = `<strong style="color:#b91c1c">Could not load ZIPs.</strong> ${escapeHtml(err.message)}<br><br><strong>Quick test:</strong> click Preview Query, then Open test query. If it opens JSON, the Maryland service is reachable. If it says CORS/network, we need the Vercel API proxy version.`;
-      }
-    }
-
-    function selectApiZip(zip) {
-      document.getElementById('apiZip').value = zip;
-      const multi = document.getElementById('apiZipMulti');
-      Array.from(multi.options).forEach(o => o.selected = false);
-      document.getElementById('apiStatus').textContent = `ZIP ${zip} selected as manual override. Click Pull Selected Leads.`;
-    }
-
-    async function pullTopZipRoutes() {
-      if (!countyZipStats.length) await loadMarylandZipCodes();
-      if (!countyZipStats.length) return;
-      const originalZip = document.getElementById('apiZip').value;
-      const topZips = countyZipStats.slice(0, 5).map(z => z.zip);
-      const multi = document.getElementById('apiZipMulti');
-      Array.from(multi.options).forEach(o => o.selected = topZips.includes(o.value));
-      document.getElementById('apiZip').value = '';
-      await pullMarylandPropertyData(false);
-      document.getElementById('apiStatus').innerHTML = `<strong>Top ZIP pull complete.</strong> Pulled leads from: ${topZips.join(', ')}.`;
-    }
-
     async function fetchMarylandFeatures(where, maxRecords, progressText = 'Pulling records') {
       const batchSize = 2000;
       let offset = 0;
       let allFeatures = [];
       const status = document.getElementById('apiStatus');
+
       while (offset < maxRecords) {
         const count = Math.min(batchSize, maxRecords - offset);
         status.textContent = `${progressText} ${offset + 1} to ${offset + count}...`;
@@ -932,41 +785,80 @@
       return allFeatures;
     }
 
-    function chunkArray(items, size) {
-      const chunks = [];
-      for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
-      return chunks;
-    }
-
-    async function downloadCountyBatches() {
-      const status = document.getElementById('apiStatus');
-      const selectedZips = getSelectedApiZips();
+    async function loadMarylandZipCodes() {
       const county = document.getElementById('apiCounty').value.trim();
-      if (!county && !selectedZips.length) return alert('Choose a county or select ZIPs first.');
-
-      const originalMax = parseInt(document.getElementById('apiMax').value, 10) || 1000;
-      const maxForExport = Math.max(1000, originalMax);
-      const where = buildMarylandWhereClause();
+      const status = document.getElementById('apiStatus');
+      const zipExplorer = document.getElementById('zipExplorer');
+      if (!county) return alert('Choose a county first, then click Show ZIPs in County.');
 
       try {
-        status.textContent = 'Preparing export batches...';
-        const features = await fetchMarylandFeatures(where, maxForExport, 'Preparing export batch records');
-        const exportLeads = features.map(leadFromMarylandFeature).filter(l => l.address && l.yearBuilt).map(scoreLead);
-        if (!exportLeads.length) {
-          status.textContent = 'No leads found to export. Try broader filters.';
-          return;
+        status.textContent = 'Loading ZIP codes for selected county and year range...';
+        const where = buildMarylandWhereClause({ zips: [] });
+        const batchSize = 2000;
+        const maxScan = 50000;
+        let offset = 0;
+        const zipCounts = new Map();
+
+        while (offset < maxScan) {
+          status.textContent = `Scanning county records ${offset + 1} to ${offset + batchSize} for ZIP codes...`;
+          const res = await fetch(buildMarylandZipLookupUrl(where, offset, batchSize));
+          if (!res.ok) throw new Error(`Maryland service returned ${res.status}`);
+          const data = await res.json();
+          if (data.error) throw new Error(data.error.message || 'ArcGIS ZIP query error');
+          const features = data.features || [];
+          if (!features.length) break;
+
+          features.forEach(f => {
+            const a = f.attributes || {};
+            const zip = String(a.PREMZIP || a.ZIPCODE || '').trim().slice(0,5);
+            if (zip && zip.length === 5) zipCounts.set(zip, (zipCounts.get(zip) || 0) + 1);
+          });
+
+          offset += features.length;
+          if (features.length < batchSize) break;
         }
 
-        const chunks = chunkArray(exportLeads, 1000);
-        chunks.forEach((chunk, index) => {
-          const zipLabel = selectedZips.length ? selectedZips.join('-') : `county-${county || 'all-md'}`;
-          setTimeout(() => exportCSV(chunk, `roof-age-${zipLabel}-batch-${index + 1}-of-${chunks.length}.csv`), index * 600);
-        });
-        status.innerHTML = `<strong>Export started.</strong> ${exportLeads.length} leads split into ${chunks.length} CSV file(s) of up to 1,000 rows each. Only exported files are downloaded; the full export is not forced into the table.`;
+        countyZipStats = Array.from(zipCounts.entries())
+          .map(([zip, count]) => ({ zip, count }))
+          .sort((a,b) => b.count - a.count || a.zip.localeCompare(b.zip));
+
+        const countyName = (MD_COUNTIES.find(c => c[0] === county) || [county, county])[1];
+        const multi = document.getElementById('apiZipMulti');
+        multi.innerHTML = countyZipStats.length
+          ? countyZipStats.map(z => `<option value="${escapeAttr(z.zip)}">${escapeHtml(z.zip)} — ${z.count} matching homes</option>`).join('')
+          : '<option value="">No ZIPs found</option>';
+
+        zipExplorer.classList.remove('hidden');
+        zipExplorer.innerHTML = `
+          <div class="section-note"><strong>${escapeHtml(countyName)} ZIP Coverage:</strong> Found ${countyZipStats.length} ZIP codes with matching filters. Select multiple ZIPs above, or click a ZIP below to use only that ZIP.</div>
+          <div class="table-wrap" style="max-height:260px"><table><thead><tr><th>ZIP</th><th>Matching Homes Scanned</th><th>Action</th></tr></thead><tbody>
+            ${countyZipStats.map(z => `<tr><td><strong>${escapeHtml(z.zip)}</strong></td><td>${z.count}</td><td><button class="light" onclick="selectApiZip('${escapeAttr(z.zip)}')">Use Only This ZIP</button></td></tr>`).join('')}
+          </tbody></table></div>`;
+        status.textContent = countyZipStats.length ? `Found ${countyZipStats.length} ZIP codes. Select one or multiple ZIPs above.` : 'No ZIPs found. Try widening the year range or switching Residential Filter to All property types.';
       } catch (err) {
         console.error(err);
-        status.innerHTML = `<strong style="color:#b91c1c">Batch export failed.</strong> ${escapeHtml(err.message)}`;
+        status.innerHTML = `<strong style="color:#b91c1c">Could not load ZIPs.</strong> ${escapeHtml(err.message)}<br><br>Click Preview Query and open the test query to see the raw Maryland response.`;
       }
+    }
+
+    function selectApiZip(zip) {
+      document.getElementById('apiZip').value = zip;
+      const multi = document.getElementById('apiZipMulti');
+      Array.from(multi.options).forEach(o => o.selected = false);
+      document.getElementById('apiStatus').textContent = `ZIP ${zip} selected as manual override. Click Pull Selected Leads.`;
+    }
+
+    async function pullTopZipRoutes() {
+      if (!countyZipStats.length) await loadMarylandZipCodes();
+      if (!countyZipStats.length) return;
+
+      const topZips = countyZipStats.slice(0, 5).map(z => z.zip);
+      const multi = document.getElementById('apiZipMulti');
+      Array.from(multi.options).forEach(o => o.selected = topZips.includes(o.value));
+      document.getElementById('apiZip').value = '';
+
+      await pullMarylandPropertyData(false);
+      document.getElementById('apiStatus').innerHTML = `<strong>Top ZIP pull complete.</strong> Pulled leads from: ${topZips.join(', ')}.`;
     }
 
     async function pullMarylandPropertyData(showAlert = true) {
@@ -994,10 +886,48 @@
 
         leads = [...leads, ...uniqueNew].map(scoreLead);
         renderAll();
-        status.innerHTML = `<strong>Done.</strong> Pulled ${allNew.length} records and added ${uniqueNew.length} new leads. Duplicates were skipped. For larger pulls, use Download County/ZIP Batches.`;
+        status.innerHTML = `<strong>Done.</strong> Pulled ${allNew.length} records and added ${uniqueNew.length} new leads. Duplicates were skipped.`;
       } catch (err) {
         console.error(err);
         status.innerHTML = `<strong style="color:#b91c1c">Could not pull data.</strong> ${escapeHtml(err.message)}<br>Try fewer ZIPs, a smaller year range, or use Download County/ZIP Batches.`;
+      }
+    }
+
+    function chunkArray(items, size) {
+      const chunks = [];
+      for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
+      return chunks;
+    }
+
+    async function downloadCountyBatches() {
+      const status = document.getElementById('apiStatus');
+      const selectedZips = getSelectedApiZips();
+      const county = document.getElementById('apiCounty').value.trim();
+      if (!county && !selectedZips.length) return alert('Choose a county or select ZIPs first.');
+
+      const maxForExport = Math.max(1000, parseInt(document.getElementById('apiMax').value, 10) || 1000);
+      const where = buildMarylandWhereClause({ zips: selectedZips });
+
+      try {
+        status.textContent = 'Preparing export batches...';
+        const features = await fetchMarylandFeatures(where, maxForExport, 'Preparing export batch records');
+        const exportLeads = features.map(leadFromMarylandFeature).filter(l => l.address && l.yearBuilt).map(scoreLead);
+
+        if (!exportLeads.length) {
+          status.textContent = 'No leads found to export. Try broader filters.';
+          return;
+        }
+
+        const chunks = chunkArray(exportLeads, 1000);
+        const zipLabel = selectedZips.length ? selectedZips.join('-') : `county-${county || 'all-md'}`;
+        chunks.forEach((chunk, index) => {
+          setTimeout(() => exportCSV(chunk, `roof-age-${zipLabel}-batch-${index + 1}-of-${chunks.length}.csv`), index * 700);
+        });
+
+        status.innerHTML = `<strong>Export started.</strong> ${exportLeads.length} leads split into ${chunks.length} CSV file(s) of up to 1,000 rows each.`;
+      } catch (err) {
+        console.error(err);
+        status.innerHTML = `<strong style="color:#b91c1c">Batch export failed.</strong> ${escapeHtml(err.message)}`;
       }
     }
 
@@ -1062,7 +992,7 @@
             </div>
           </td>
         </tr>`).join('');
-      document.getElementById('leadRows').innerHTML = rows || `<tr><td colspan="10">No leads yet. Import a CSV or load demo data.</td></tr>`;
+      document.getElementById('leadRows').innerHTML = rows || `<tr><td colspan="10">No leads yet. Pull Maryland data, import a CSV, or load demo data.</td></tr>`;
     }
 
     function renderStats() {
@@ -1267,7 +1197,6 @@
       reader.readAsText(file);
     });
 
-    initCountyDropdown();
     generateCampaignCopy();
     renderAll();
   </script>
