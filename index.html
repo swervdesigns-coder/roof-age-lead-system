@@ -216,6 +216,36 @@
     .neighborhood-meta { color: var(--muted); font-size: 13px; margin-bottom: 10px; }
     .footer-note { color: var(--muted); font-size: 12px; line-height: 1.45; margin-top: 16px; }
     .hidden { display: none !important; }
+
+    .query-card {
+      border: 1px solid #e5e7eb;
+      background: linear-gradient(180deg, #ffffff, #fafafa);
+      border-radius: 16px;
+      padding: 12px;
+      margin-top: 12px;
+    }
+
+    .tight-row { align-items: start; }
+    .tight-row label { margin-top: 0; }
+
+    .toggle-line {
+      display: grid;
+      grid-template-columns: 18px 1fr;
+      gap: 8px;
+      align-items: start;
+      font-size: 12px;
+      font-weight: 700;
+      color: #374151;
+      line-height: 1.35;
+      margin: 10px 0 4px;
+    }
+
+    .toggle-line input {
+      width: auto;
+      margin-top: 2px;
+      accent-color: var(--maroon);
+    }
+
     @media (max-width: 1100px) {
       .grid { grid-template-columns: 1fr; }
       .stats { grid-template-columns: repeat(2, 1fr); }
@@ -446,6 +476,36 @@
     #tab-route .table-wrap, #tab-neighborhoods .table-wrap { max-height: 520px; }
     .footer-note { margin-bottom: 0; }
 
+
+    .query-card {
+      border: 1px solid #e5e7eb;
+      background: linear-gradient(180deg, #ffffff, #fafafa);
+      border-radius: 16px;
+      padding: 12px;
+      margin-top: 12px;
+    }
+
+    .tight-row { align-items: start; }
+    .tight-row label { margin-top: 0; }
+
+    .toggle-line {
+      display: grid;
+      grid-template-columns: 18px 1fr;
+      gap: 8px;
+      align-items: start;
+      font-size: 12px;
+      font-weight: 700;
+      color: #374151;
+      line-height: 1.35;
+      margin: 10px 0 4px;
+    }
+
+    .toggle-line input {
+      width: auto;
+      margin-top: 2px;
+      accent-color: var(--maroon);
+    }
+
     @media (max-width: 1100px) {
       .stats { position: static; }
       .grid.app-grid { grid-template-columns: 1fr; }
@@ -481,7 +541,7 @@
           <h2>Lead Builder</h2>
         </div>
         <div class="card-body">
-          <div class="lead-builder-badge">⚡ V4 Clean Dashboard · Fast ZIP Mode</div>
+          <div class="lead-builder-badge">⚡ V5 Clean Dashboard · Coverage Safety Mode</div>
           <div class="command-card">
             <h3>Pull Maryland Property Data</h3>
             <p>Pick a county, load ZIPs instantly, choose one or multiple ZIPs, then pull only what you need into the dashboard.</p>
@@ -516,17 +576,22 @@
             <option value="BACI">Baltimore City / BACI</option>
           </select>
 
-          <div class="row">
-            <div>
-              <label>ZIP Manual Override</label>
-              <input id="apiZip" placeholder="Optional: 20678" />
-              <div class="hint">Use this for one ZIP, or select multiple ZIPs below.</div>
+          <div class="query-card">
+            <div class="row tight-row">
+              <div>
+                <label>Manual ZIP</label>
+                <input id="apiZip" placeholder="Optional: 20678" />
+              </div>
+              <div>
+                <label>Load Limit</label>
+                <input id="apiMax" type="number" value="1000" />
+              </div>
             </div>
-            <div>
-              <label>Max Records To Load Into App</label>
-              <input id="apiMax" type="number" value="1000" />
-              <div class="hint">Keeps the dashboard fast. Use batch export for larger lists.</div>
-            </div>
+            <label class="toggle-line">
+              <input id="zipSafetyMode" type="checkbox" checked />
+              <span>Coverage Safety Mode: when ZIPs are selected, search the ZIP across Maryland instead of locking it to one county.</span>
+            </label>
+            <div class="hint">Use a manual ZIP for a quick check, or select multiple ZIPs below. Batch Export keeps large pulls in 1,000-row files.</div>
           </div>
 
           <label>Selected ZIP Codes</label>
@@ -563,7 +628,7 @@
             <button class="green" onclick="downloadCountyBatches()">Batch Export</button>
             <button class="light" onclick="previewMarylandQuery()">Preview</button>
           </div>
-          <div id="apiStatus" class="hint quick-status">Ready to pull by ZIP, county, and year built.</div>
+          <div id="apiStatus" class="hint quick-status">Ready. Use ZIP Safety Mode to avoid missing leads in ZIPs that cross county lines.</div>
           <div id="zipExplorer" class="hidden" style="margin-top:12px"></div>
 
           <div class="secondary-tools">
@@ -785,7 +850,7 @@
       HOWA: ['20701','20723','20759','20763','20777','20794','20833','21029','21036','21042','21043','21044','21045','21046','21075','21076','21104','21163'],
       KENT: ['21610','21620','21635','21645','21650','21651','21661','21667','21678'],
       MONT: ['20812','20814','20815','20816','20817','20818','20832','20833','20837','20838','20839','20841','20842','20850','20851','20852','20853','20854','20855','20860','20861','20862','20866','20868','20871','20872','20874','20876','20877','20878','20879','20880','20882','20886','20895','20901','20902','20903','20904','20905','20906','20910','20912'],
-      PRGE: ['20588','20607','20705','20706','20707','20708','20710','20712','20715','20716','20720','20721','20722','20735','20737','20740','20742','20743','20744','20745','20746','20747','20748','20769','20770','20772','20774','20781','20782','20783','20784','20785','20787'],
+      PRGE: ['20588','20607','20613','20705','20706','20707','20708','20710','20712','20715','20716','20720','20721','20722','20735','20737','20740','20742','20743','20744','20745','20746','20747','20748','20769','20770','20772','20774','20781','20782','20783','20784','20785','20787'],
       QUEE: ['21607','21617','21619','21620','21623','21628','21638','21644','21656','21658','21666','21668','21670'],
       STMA: ['20609','20618','20619','20620','20621','20624','20626','20627','20628','20630','20634','20635','20636','20650','20653','20656','20660','20667','20670','20674','20680','20684','20686','20687','20690','20692'],
       SOME: ['21817','21821','21824','21838','21851','21853','21862','21867','21871'],
@@ -959,11 +1024,12 @@
       const residentialOnly = document.getElementById('apiResidentialOnly').value === 'yes';
       const parts = [];
 
-      if (county) {
+      const zipWhere = buildZipWhere(selectedZips);
+      const safetyMode = document.getElementById('zipSafetyMode')?.checked !== false;
+      if (county && !(safetyMode && zipWhere)) {
         const c = county.replace(/'/g, "''");
         parts.push(`JURSCODE = '${c}'`);
       }
-      const zipWhere = buildZipWhere(selectedZips);
       if (zipWhere) parts.push(zipWhere);
       if (Number.isFinite(from)) parts.push(`YEARBLT >= '${from}'`);
       if (Number.isFinite(to)) parts.push(`YEARBLT <= '${to}'`);
@@ -982,7 +1048,7 @@
       const multi = document.getElementById('apiZipMulti');
       if (multi) multi.innerHTML = '<option value="">Click Show ZIPs in County</option>';
       document.getElementById('apiZip').value = '';
-      document.getElementById('apiStatus').textContent = 'County changed. Click “Show ZIPs in County” to see matching ZIPs.';
+      document.getElementById('apiStatus').textContent = 'County changed. Click Show ZIPs to load the ZIP list. Coverage Safety Mode helps avoid missing cross-county ZIP leads.';
     }
 
     function selectAllZipOptions() {
@@ -1132,7 +1198,7 @@
       document.getElementById('apiZip').value = zip;
       const multi = document.getElementById('apiZipMulti');
       Array.from(multi.options).forEach(o => o.selected = false);
-      document.getElementById('apiStatus').textContent = `ZIP ${zip} selected as manual override. Click Pull Selected Leads.`;
+      document.getElementById('apiStatus').textContent = `ZIP ${zip} selected. With Coverage Safety Mode on, this ZIP will search across Maryland, not just the selected county.`;
     }
 
     async function pullTopZipRoutes() {
@@ -1173,7 +1239,7 @@
 
         leads = [...leads, ...uniqueNew].map(scoreLead);
         renderAll();
-        status.innerHTML = `<strong>Done.</strong> Pulled ${allNew.length} records and added ${uniqueNew.length} new leads. Duplicates were skipped.`;
+        status.innerHTML = allNew.length ? `<strong>Done.</strong> Pulled ${allNew.length} records and added ${uniqueNew.length} new leads. Duplicates were skipped.` : `<strong>No matching records found.</strong> Try widening the year range, turning Residential Filter to All property types, clearing county, or using Preview to inspect the query.`;
       } catch (err) {
         console.error(err);
         status.innerHTML = `<strong style="color:#b91c1c">Could not pull data.</strong> ${escapeHtml(err.message)}<br>Try fewer ZIPs, a smaller year range, or use Download County/ZIP Batches.`;
