@@ -541,7 +541,7 @@
           <h2>Lead Builder</h2>
         </div>
         <div class="card-body">
-          <div class="lead-builder-badge">⚡ V7 Owner Enrichment · Property Type Filters</div>
+          <div class="lead-builder-badge">⚡ V7.1 Owner Enrichment · Reset / Refresh Controls</div>
           <div class="command-card">
             <h3>Pull Maryland Property Data</h3>
             <p>Pick a county, choose residential/commercial/both, pull leads, open exact SDAT records, and optionally enrich owner names through the included Vercel API route.</p>
@@ -624,6 +624,7 @@
           <div class="compact-actions">
             <button class="light" onclick="loadMarylandZipCodes()">Show ZIPs</button>
             <button class="primary" onclick="pullMarylandPropertyData()">Pull Leads</button>
+            <button class="blue" onclick="refreshCurrentSearch()">Refresh Search</button>
             <button class="light" onclick="verifyMarylandZipCoverage()">Verify ZIPs</button>
             <button class="light" onclick="deepScanMarylandZipCodes()">Deep Scan Counts</button>
             <button class="dark" onclick="pullTopZipRoutes()">Pull Top ZIPs</button>
@@ -710,7 +711,9 @@
           <div class="btns">
             <button class="green" onclick="exportCSV(filteredLeads(), 'roof-age-leads-filtered.csv')">Export Filtered CSV</button>
             <button class="blue" onclick="copyJobNimbusImport()">Copy JobNimbus Notes</button>
-            <button class="danger" onclick="clearAll()">Clear All</button>
+            <button class="danger" onclick="clearAll()">Clear Leads</button>
+            <button class="light" onclick="resetWorkspace()">Reset Workspace</button>
+            <button class="danger" onclick="resetApp()">Full Reset</button>
           </div>
               </div>
             </details>
@@ -1610,12 +1613,90 @@ Recommended Action: Offer free roof age & condition check with photo documentati
       renderAll();
     }
 
+
+    function clearTextField(id) {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    }
+
+    function setFieldValue(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.value = value;
+    }
+
+    function clearStatusAreas() {
+      const zipExplorer = document.getElementById('zipExplorer');
+      if (zipExplorer) {
+        zipExplorer.classList.add('hidden');
+        zipExplorer.innerHTML = '';
+      }
+      const apiStatus = document.getElementById('apiStatus');
+      if (apiStatus) apiStatus.textContent = 'Ready. Use Property Type Filter, pull leads, then click Open SDAT or Enrich Owner.';
+      const routeOutput = document.getElementById('routeOutput');
+      if (routeOutput) routeOutput.innerHTML = '';
+    }
+
+    function resetWorkspace() {
+      // Clears screen filters and temporary route output, but keeps pulled leads and selected county/ZIP criteria.
+      ['search','filterZip','filterMinScore','routeZip','campaignArea'].forEach(clearTextField);
+      setFieldValue('filterPriority', 'all');
+      setFieldValue('sortBy', 'scoreDesc');
+      setFieldValue('routeMax', '20');
+      setFieldValue('routeMinScore', '5');
+      routeLeads = [];
+      clearStatusAreas();
+      switchTab('leads');
+      renderAll();
+    }
+
+    async function refreshCurrentSearch() {
+      // Re-runs the current Maryland query and replaces the current lead table with fresh results.
+      const hasCounty = document.getElementById('apiCounty')?.value;
+      const hasZip = document.getElementById('apiZip')?.value || getSelectedApiZips().length;
+      if (!hasCounty && !hasZip) {
+        alert('Choose a county, selected ZIPs, or a manual ZIP before refreshing the search.');
+        return;
+      }
+      if (!confirm('Refresh the current Maryland search? This will clear the current lead table and pull fresh records using your current criteria.')) return;
+      leads = [];
+      routeLeads = [];
+      clearStatusAreas();
+      renderAll();
+      await pullMarylandPropertyData(false);
+    }
+
+    function resetApp() {
+      if (!confirm('Full reset? This clears leads, selected ZIPs, filters, route output, and resets the main criteria back to defaults.')) return;
+      leads = [];
+      routeLeads = [];
+      countyZipStats = [];
+      lastBatchExportRows = [];
+      setFieldValue('apiCounty', '');
+      setFieldValue('apiZip', '');
+      setFieldValue('apiMax', '1000');
+      setFieldValue('apiYearFrom', '2005');
+      setFieldValue('apiYearTo', '2016');
+      setFieldValue('apiPropertyType', 'residential');
+      const safety = document.getElementById('zipSafetyMode');
+      if (safety) safety.checked = true;
+      const multi = document.getElementById('apiZipMulti');
+      if (multi) multi.innerHTML = '<option value="">Choose a county, then click Show ZIPs in County</option>';
+      ['mAddress','mCity','mZip','mYear','mNeighborhood','mOwner','mNotes'].forEach(clearTextField);
+      setFieldValue('minAge', '10');
+      setFieldValue('maxAge', '20');
+      setFieldValue('hotScore', '8');
+      setFieldValue('clusterMin', '8');
+      resetWorkspace();
+    }
+
     function clearAll() {
       if (!confirm('Clear all leads?')) return;
       leads = [];
       routeLeads = [];
       renderAll();
       document.getElementById('routeOutput').innerHTML = '';
+      const apiStatus = document.getElementById('apiStatus');
+      if (apiStatus) apiStatus.textContent = 'Leads cleared. Criteria and ZIP selections were kept.';
     }
 
     function prefillRoute(zip) {
