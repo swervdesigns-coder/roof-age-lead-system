@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Simple Solutions | Roof Age Lead System</title>
+  <title>Simple Solutions | Roof Age Lead System V4</title>
   <style>
     :root {
       --maroon: #7a0f1b;
@@ -340,6 +340,119 @@
       font-size: 12px;
     }
 
+
+    /* V4 cleaner app-shell layout */
+    body { min-height: 100vh; }
+    main.app-shell {
+      max-width: 1500px;
+      margin: 16px auto 30px;
+      padding: 0 16px;
+    }
+    .stats {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      padding: 10px 0 12px;
+      backdrop-filter: blur(14px);
+      background: rgba(246,247,249,.86);
+    }
+    .stat { padding: 12px 14px; }
+    .stat small { font-size: 11px; }
+    .stat b { font-size: 22px; }
+    .grid.app-grid {
+      grid-template-columns: 420px minmax(0, 1fr);
+      align-items: start;
+    }
+    aside.card.control-panel {
+      position: sticky;
+      top: 92px;
+      max-height: calc(100vh - 110px);
+      overflow: auto;
+      scrollbar-width: thin;
+    }
+    .control-panel .card-head {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+    .workspace-panel {
+      min-width: 0;
+    }
+    .workspace-panel .card-body { padding: 14px; }
+    .tab-panel {
+      min-height: calc(100vh - 180px);
+    }
+    .compact-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .compact-actions button { width: 100%; }
+    .secondary-tools {
+      margin-top: 16px;
+      display: grid;
+      gap: 10px;
+    }
+    details.tool-drawer {
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #fff, #fafafa);
+      overflow: hidden;
+    }
+    details.tool-drawer > summary {
+      cursor: pointer;
+      list-style: none;
+      padding: 13px 14px;
+      font-weight: 900;
+      color: #111827;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    details.tool-drawer > summary::-webkit-details-marker { display: none; }
+    details.tool-drawer > summary::after {
+      content: '+';
+      color: var(--maroon);
+      font-size: 20px;
+      line-height: 1;
+    }
+    details.tool-drawer[open] > summary::after { content: '–'; }
+    .drawer-body {
+      border-top: 1px solid #e5e7eb;
+      padding: 14px;
+    }
+    .command-card {
+      background: linear-gradient(135deg, #111827, #3b0710);
+      color: white;
+      border-radius: 18px;
+      padding: 14px;
+      margin-bottom: 14px;
+      box-shadow: 0 12px 25px rgba(0,0,0,.12);
+    }
+    .command-card h3 { color: white; margin: 0 0 6px; }
+    .command-card p { color: #f5d9dd; margin: 0; font-size: 13px; line-height: 1.4; }
+    .quick-status {
+      margin-top: 12px;
+      padding: 10px 12px;
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      min-height: 42px;
+    }
+    #apiZipMulti { min-height: 112px !important; }
+    .table-wrap { max-height: calc(100vh - 330px); }
+    #tab-route .table-wrap, #tab-neighborhoods .table-wrap { max-height: 520px; }
+    .footer-note { margin-bottom: 0; }
+
+    @media (max-width: 1100px) {
+      .stats { position: static; }
+      .grid.app-grid { grid-template-columns: 1fr; }
+      aside.card.control-panel { position: static; max-height: none; }
+      .tab-panel { min-height: auto; }
+    }
+
   </style>
 </head>
 <body>
@@ -353,7 +466,7 @@
     </div>
   </header>
 
-  <main>
+  <main class="app-shell">
     <div class="stats">
       <div class="stat"><small>Total Leads</small><b id="statTotal">0</b></div>
       <div class="stat"><small>Hot Leads</small><b id="statHot">0</b></div>
@@ -362,16 +475,16 @@
       <div class="stat"><small>Target Neighborhoods</small><b id="statNeighborhoods">0</b></div>
     </div>
 
-    <div class="grid">
-      <aside class="card">
+    <div class="grid app-grid">
+      <aside class="card control-panel">
         <div class="card-head">
           <h2>Lead Builder</h2>
         </div>
         <div class="card-body">
-          <div class="lead-builder-badge">⚡ V3 Premium · Fast ZIP Mode</div>
-          <h3>Pull Maryland Property Data</h3>
-          <div class="section-note">
-            Pick a county, load ZIPs instantly, select one or multiple ZIPs, then pull a controlled number of leads into the app. Use batch export for larger pulls without slowing down the dashboard.
+          <div class="lead-builder-badge">⚡ V4 Clean Dashboard · Fast ZIP Mode</div>
+          <div class="command-card">
+            <h3>Pull Maryland Property Data</h3>
+            <p>Pick a county, load ZIPs instantly, choose one or multiple ZIPs, then pull only what you need into the dashboard.</p>
           </div>
 
           <label>County</label>
@@ -442,22 +555,24 @@
             <option value="no">All property types</option>
           </select>
 
-          <div class="btns">
-            <button class="light" onclick="loadMarylandZipCodes()">Show ZIPs Fast</button>
-            <button class="primary" onclick="pullMarylandPropertyData()">Pull Selected Leads</button>
-            <button class="light" onclick="deepScanMarylandZipCodes()">Deep Scan ZIP Counts</button>
+          <div class="compact-actions">
+            <button class="light" onclick="loadMarylandZipCodes()">Show ZIPs</button>
+            <button class="primary" onclick="pullMarylandPropertyData()">Pull Leads</button>
+            <button class="light" onclick="deepScanMarylandZipCodes()">Deep Scan</button>
             <button class="dark" onclick="pullTopZipRoutes()">Pull Top ZIPs</button>
-            <button class="green" onclick="downloadCountyBatches()">Download County/ZIP Batches</button>
-            <button class="light" onclick="previewMarylandQuery()">Preview Query</button>
+            <button class="green" onclick="downloadCountyBatches()">Batch Export</button>
+            <button class="light" onclick="previewMarylandQuery()">Preview</button>
           </div>
-          <div id="apiStatus" class="hint">Ready to pull by ZIP, county, and year built.</div>
+          <div id="apiStatus" class="hint quick-status">Ready to pull by ZIP, county, and year built.</div>
           <div id="zipExplorer" class="hidden" style="margin-top:12px"></div>
 
-          <hr style="border:0;border-top:1px solid #e5e7eb;margin:18px 0" />
-
-          <div class="section-note">
-            You can also import your own CSV from SDAT/county data, Regrid, PropStream, or a cleaned spreadsheet.
-          </div>
+          <div class="secondary-tools">
+            <details class="tool-drawer">
+              <summary>Import CSV / Demo Data</summary>
+              <div class="drawer-body">
+                <div class="section-note">
+                  You can also import your own CSV from SDAT/county data, Regrid, PropStream, or a cleaned spreadsheet.
+                </div>
 
           <div id="dropzone" class="dropzone">
             <strong>Drop CSV here</strong><br />
@@ -469,10 +584,12 @@
             <button class="dark" onclick="downloadTemplate()">Download CSV Template</button>
             <button class="light" onclick="loadDemoData()">Load Demo Data</button>
           </div>
+              </div>
+            </details>
 
-          <hr style="border:0;border-top:1px solid #e5e7eb;margin:18px 0" />
-
-          <h3>Add One Lead Manually</h3>
+            <details class="tool-drawer">
+              <summary>Add One Lead Manually</summary>
+              <div class="drawer-body">
           <label>Property Address</label>
           <input id="mAddress" placeholder="123 Main St" />
           <div class="row">
@@ -500,10 +617,12 @@
           <label>Notes</label>
           <textarea id="mNotes" placeholder="3-tab roof, algae streaking, nearby roof replacements, etc."></textarea>
           <button class="primary" style="width:100%;margin-top:12px" onclick="addManualLead()">Add Lead</button>
+              </div>
+            </details>
 
-          <hr style="border:0;border-top:1px solid #e5e7eb;margin:18px 0" />
-
-          <h3>Scoring Settings</h3>
+            <details class="tool-drawer">
+              <summary>Scoring & Exports</summary>
+              <div class="drawer-body">
           <div class="row">
             <div>
               <label>Prime Minimum Age</label>
@@ -525,12 +644,15 @@
             <button class="blue" onclick="copyJobNimbusImport()">Copy JobNimbus Notes</button>
             <button class="danger" onclick="clearAll()">Clear All</button>
           </div>
+              </div>
+            </details>
+          </div>
 
           <p class="footer-note"><strong>Compliance note:</strong> This tool is for research, mailers, route planning, and door knocking. Do not cold text marketing leads unless they gave proper SMS consent.</p>
         </div>
       </aside>
 
-      <section>
+      <section class="workspace-panel">
         <div class="tabs">
           <div class="tab active" data-tab="leads" onclick="switchTab('leads')">Leads</div>
           <div class="tab" data-tab="neighborhoods" onclick="switchTab('neighborhoods')">Neighborhoods</div>
@@ -539,7 +661,7 @@
         </div>
 
         <div id="tab-leads" class="card tab-panel">
-          <div class="card-head"><h2>Lead Table</h2></div>
+          <div class="card-head"><h2>Lead Workspace</h2><div class="hint">Filter, review, route, and export the homes you pulled into the dashboard.</div></div>
           <div class="card-body">
             <div class="toolbar">
               <input id="search" placeholder="Search address, owner, ZIP, neighborhood..." oninput="renderAll()" />
