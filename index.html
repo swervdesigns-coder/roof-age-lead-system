@@ -332,6 +332,30 @@
           <label>County</label>
           <select id="apiCounty" onchange="onCountyChange()">
             <option value="">All Maryland / ZIP only</option>
+            <option value="01">Allegany County / 01</option>
+            <option value="02">Anne Arundel County / 02</option>
+            <option value="03">Baltimore County / 03</option>
+            <option value="04">Calvert County / 04</option>
+            <option value="05">Caroline County / 05</option>
+            <option value="06">Carroll County / 06</option>
+            <option value="07">Cecil County / 07</option>
+            <option value="08">Charles County / 08</option>
+            <option value="09">Dorchester County / 09</option>
+            <option value="10">Frederick County / 10</option>
+            <option value="11">Garrett County / 11</option>
+            <option value="12">Harford County / 12</option>
+            <option value="13">Howard County / 13</option>
+            <option value="14">Kent County / 14</option>
+            <option value="15">Montgomery County / 15</option>
+            <option value="16">Prince George's County / 16</option>
+            <option value="17">Queen Anne's County / 17</option>
+            <option value="18">St. Mary's County / 18</option>
+            <option value="19">Somerset County / 19</option>
+            <option value="20">Talbot County / 20</option>
+            <option value="21">Washington County / 21</option>
+            <option value="22">Wicomico County / 22</option>
+            <option value="23">Worcester County / 23</option>
+            <option value="24">Baltimore City / 24</option>
           </select>
           <div class="row">
             <div>
@@ -712,12 +736,13 @@
 
     function initCountyDropdown() {
       const select = document.getElementById('apiCounty');
-      if (!select || select.options.length > 1) return;
+      if (!select) return;
+      const hasCounties = Array.from(select.options).some(o => o.value === '04');
+      if (hasCounties) return;
       MD_COUNTIES.forEach(([code, name]) => {
         const option = document.createElement('option');
         option.value = code;
-        option.textContent = `${name} County / ${code}`;
-        if (code === '24') option.textContent = 'Baltimore City / 24';
+        option.textContent = code === '24' ? 'Baltimore City / 24' : `${name} County / ${code}`;
         select.appendChild(option);
       });
     }
