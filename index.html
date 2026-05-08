@@ -723,7 +723,11 @@
       const residentialOnly = document.getElementById('apiResidentialOnly').value === 'yes';
       const parts = [];
 
-      if (county) parts.push(`JURSCODE = '${county.replace(/'/g, "''")}'`);
+      if (county) {
+        const c = county.replace(/'/g, "''");
+        const cNoZero = String(parseInt(c, 10));
+        parts.push(`(JURSCODE = '${c}' OR JURSCODE = '${cNoZero}')`);
+      }
       if (zip) parts.push(`(PREMZIP = '${zip.replace(/'/g, "''")}' OR ZIPCODE = '${zip.replace(/'/g, "''")}')`);
       if (Number.isFinite(from)) parts.push(`YEARBLT >= '${from}'`);
       if (Number.isFinite(to)) parts.push(`YEARBLT <= '${to}'`);
@@ -774,20 +778,21 @@
       return `${MD_PROPERTY_LAYER_URL}?${params.toString()}`;
     }
 
-    function buildMarylandZipStatsUrl(where) {
+    function buildMarylandZipLookupUrl(where, offset = 0, count = 2000) {
       const params = new URLSearchParams({
         f: 'json',
         where,
-        outFields: 'PREMZIP',
+        outFields: 'PREMZIP,ZIPCODE',
         returnGeometry: 'false',
-        groupByFieldsForStatistics: 'PREMZIP',
-        outStatistics: JSON.stringify([{ statisticType: 'count', onStatisticField: 'OBJECTID', outStatisticFieldName: 'lead_count' }]),
-        orderByFields: 'lead_count DESC'
+        orderByFields: 'PREMZIP ASC',
+        resultOffset: String(offset),
+        resultRecordCount: String(count)
       });
       return `${MD_PROPERTY_LAYER_URL}?${params.toString()}`;
     }
 
     async function loadMarylandZipCodes() {
+      const county = document.geasync function loadMarylandZipCodes() {
       const county = document.getElementById('apiCounty').value.trim();
       const status = document.getElementById('apiStatus');
       const zipExplorer = document.getElementById('zipExplorer');
@@ -796,33 +801,47 @@
       try {
         status.textContent = 'Loading ZIP codes for selected county and year range...';
         const where = buildMarylandWhereClause({ zip: '' });
-        const res = await fetch(buildMarylandZipStatsUrl(where));
-        if (!res.ok) throw new Error(`Maryland service returned ${res.status}`);
-        const data = await res.json();
-        if (data.error) throw new Error(data.error.message || 'ArcGIS ZIP query error');
+        const batchSize = 2000;
+        const maxScan = 30000;
+        let offset = 0;
+        const zipCounts = new Map();
 
-        countyZipStats = (data.features || [])
-          .map(f => ({ zip: f.attributes.PREMZIP || 'Unknown', count: f.attributes.lead_count || 0 }))
-          .filter(z => z.zip && z.zip !== 'Unknown')
-          .sort((a,b) => b.count - a.count);
+        while (offset < maxScan) {
+          status.textContent = `Scanning county records ${offset + 1} to ${offset + batchSize} for ZIP codes...`;
+          const res = await fetch(buildMarylandZipLookupUrl(where, offset, batchSize));
+          if (!res.ok) throw new Error(`Maryland service returned ${res.status}`);
+          const data = await res.json();
+          if (data.error) throw new Error(data.error.message || 'ArcGIS ZIP query error');
+          const features = data.features || [];
+          if (!features.length) break;
+
+          features.forEach(f => {
+            const a = f.attributes || {};
+            const zip = String(a.PREMZIP || a.ZIPCODE || '').trim();
+            if (zip && zip.length >= 5) zipCounts.set(zip.slice(0, 5), (zipCounts.get(zip.slice(0, 5)) || 0) + 1);
+          });
+
+          offset += features.length;
+          if (features.length < batchSize) break;
+        }
+
+        countyZipStats = Array.from(zipCounts.entries())
+          .map(([zip, count]) => ({ zip, count }))
+          .sort((a,b) => b.count - a.count || a.zip.localeCompare(b.zip));
 
         const countyName = (MD_COUNTIES.find(c => c[0] === county) || [county, county])[1];
         zipExplorer.classList.remove('hidden');
         zipExplorer.innerHTML = `
-          <div class="section-note"><strong>${escapeHtml(countyName)} ZIP Coverage:</strong> Found ${countyZipStats.length} ZIP codes with matching year-built/property filters. Click a ZIP to load it into the ZIP box, or use Pull Top ZIPs.</div>
-          <div class="table-wrap" style="max-height:260px"><table><thead><tr><th>ZIP</th><th>Matching Homes</th><th>Action</th></tr></thead><tbody>
+          <div class="section-note"><strong>${escapeHtml(countyName)} ZIP Coverage:</strong> Found ${countyZipStats.length} ZIP codes with matching year-built/property filters. Counts are based on scanned matching records. Click a ZIP to load it into the ZIP box, or use Pull Top ZIPs.</div>
+          <div class="table-wrap" style="max-height:260px"><table><thead><tr><th>ZIP</th><th>Matching Homes Scanned</th><th>Action</th></tr></thead><tbody>
             ${countyZipStats.map(z => `<tr><td><strong>${escapeHtml(z.zip)}</strong></td><td>${z.count}</td><td><button class="light" onclick="selectApiZip('${escapeAttr(z.zip)}')">Use ZIP</button></td></tr>`).join('')}
           </tbody></table></div>`;
-        status.textContent = `Found ${countyZipStats.length} ZIP codes. Review the list below.`;
+        status.textContent = countyZipStats.length ? `Found ${countyZipStats.length} ZIP codes. Review the list below.` : 'No ZIPs found. Try widening the year range or switching Residential Filter to All property types.';
       } catch (err) {
         console.error(err);
-        status.innerHTML = `<strong style="color:#b91c1c">Could not load ZIPs.</strong> ${escapeHtml(err.message)}`;
+        status.innerHTML = `<strong style="color:#b91c1c">Could not load ZIPs.</strong> ${escapeHtml(err.message)}<br><br><strong>Quick test:</strong> click Preview Query, then Open test query. If it opens JSON, the Maryland service is reachable. If it says CORS/network, we need the Vercel API proxy version.`;
       }
-    }
-
-    function selectApiZip(zip) {
-      document.getElementById('apiZip').value = zip;
-      document.getElementById('apiStatus').textContent = `ZIP ${zip} selected. Click Pull Leads.`;
+    }ent.getElementById('apiStatus').textContent = `ZIP ${zip} selected. Click Pull Leads.`;
     }
 
     async function pullTopZipRoutes() {
