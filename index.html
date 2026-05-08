@@ -541,15 +541,14 @@
           <h2>Lead Builder</h2>
         </div>
         <div class="card-body">
-          <div class="lead-builder-badge">⚡ V7.3 Owner Enrichment · Auto-Reset Pulls</div>
+          <div class="lead-builder-badge">⚡ V7.4 Multi-County Search · Auto-Reset Pulls</div>
           <div class="command-card">
             <h3>Pull Maryland Property Data</h3>
             <p>Pick a county, choose residential/commercial/both, pull leads, open exact SDAT records, and optionally enrich owner names through the included Vercel API route.</p>
           </div>
 
-          <label>County</label>
-          <select id="apiCounty" onchange="onCountyChange()">
-            <option value="">All Maryland / ZIP only</option>
+          <label>Counties</label>
+          <select id="apiCounty" multiple size="7" onchange="onCountyChange()" style="min-height:150px">
             <option value="ALLE">Allegany County / ALLE</option>
             <option value="ANAR">Anne Arundel County / ANAR</option>
             <option value="BACO">Baltimore County / BACO</option>
@@ -575,6 +574,12 @@
             <option value="WORC">Worcester County / WORC</option>
             <option value="BACI">Baltimore City / BACI</option>
           </select>
+          <div class="btns">
+            <button class="light" onclick="selectServiceCounties()">Select Service Counties</button>
+            <button class="light" onclick="selectAllCounties()">Select All Counties</button>
+            <button class="light" onclick="clearCountyOptions()">Clear Counties</button>
+          </div>
+          <div class="hint">Tip: hold CTRL on Windows or CMD on Mac to pick more than one county. Service Counties selects Calvert, Charles, Prince George's, St. Mary's, and Anne Arundel.</div>
 
           <div class="query-card">
             <div class="row tight-row">
@@ -1022,6 +1027,44 @@
       alert(`Imported ${newLeads.length} usable leads.`);
     }
 
+    function getSelectedApiCounties() {
+      const countySelect = document.getElementById('apiCounty');
+      if (!countySelect) return [];
+      return Array.from(countySelect.selectedOptions).map(o => o.value).filter(Boolean);
+    }
+
+    function getCountyLabel(counties = getSelectedApiCounties()) {
+      if (!counties.length) return 'All Maryland / ZIP only';
+      if (counties.length === 1) {
+        const found = MD_COUNTIES.find(c => c[0] === counties[0]);
+        return found ? found[1] : counties[0];
+      }
+      return `${counties.length} selected counties`;
+    }
+
+    function setCountySelections(values = []) {
+      const countySelect = document.getElementById('apiCounty');
+      if (!countySelect) return;
+      const wanted = new Set(values);
+      Array.from(countySelect.options).forEach(o => o.selected = wanted.has(o.value));
+      onCountyChange();
+    }
+
+    function selectServiceCounties() {
+      setCountySelections(['CALV','CHAR','PRGE','STMA','ANAR']);
+      document.getElementById('apiStatus').textContent = 'Service counties selected. Click Show ZIPs to combine their ZIP lists.';
+    }
+
+    function selectAllCounties() {
+      setCountySelections(MD_COUNTIES.map(c => c[0]));
+      document.getElementById('apiStatus').textContent = 'All Maryland counties selected. Use Batch Export or a smaller Load Limit for large pulls.';
+    }
+
+    function clearCountyOptions() {
+      setCountySelections([]);
+      document.getElementById('apiStatus').textContent = 'County selection cleared. You can use a manual ZIP or select counties again.';
+    }
+
     function getSelectedApiZips() {
       const manualZip = document.getElementById('apiZip').value.trim();
       if (manualZip) return [manualZip.slice(0,5)];
@@ -1038,7 +1081,7 @@
     }
 
     function buildMarylandWhereClause(options = {}) {
-      const county = options.county ?? document.getElementById('apiCounty').value.trim();
+      const selectedCounties = options.counties ?? (options.county !== undefined ? [options.county].filter(Boolean) : getSelectedApiCounties());
       const selectedZips = options.zips ?? (options.zip !== undefined ? [options.zip].filter(Boolean) : getSelectedApiZips());
       const from = parseInt(document.getElementById('apiYearFrom').value, 10);
       const to = parseInt(document.getElementById('apiYearTo').value, 10);
@@ -1047,9 +1090,9 @@
 
       const zipWhere = buildZipWhere(selectedZips);
       const safetyMode = document.getElementById('zipSafetyMode')?.checked !== false;
-      if (county && !(safetyMode && zipWhere)) {
-        const c = county.replace(/'/g, "''");
-        parts.push(`JURSCODE = '${c}'`);
+      if (selectedCounties.length && !(safetyMode && zipWhere)) {
+        const quotedCounties = selectedCounties.map(c => `'${String(c).replace(/'/g, "''")}'`).join(',');
+        parts.push(`JURSCODE IN (${quotedCounties})`);
       }
       if (zipWhere) parts.push(zipWhere);
       if (Number.isFinite(from)) parts.push(`YEARBLT >= '${from}'`);
@@ -1150,14 +1193,14 @@
     }
 
     async function verifyMarylandZipCoverage() {
-      const county = document.getElementById('apiCounty').value.trim();
+      const selectedCounties = getSelectedApiCounties();
       const status = document.getElementById('apiStatus');
-      if (!county) return alert('Choose a county first, then click Verify ZIPs.');
+      if (!selectedCounties.length) return alert('Choose one or more counties first, then click Verify ZIPs.');
 
       try {
         status.textContent = 'Verifying ZIP coverage against live Maryland Parcel Points...';
         const liveZips = await fetchLiveCountyZips();
-        const staticZips = MD_COUNTY_ZIPS[county] || [];
+        const staticZips = Array.from(new Set(selectedCounties.flatMap(c => MD_COUNTY_ZIPS[c] || []))).sort((a, b) => a.localeCompare(b));
         const staticSet = new Set(staticZips);
         const liveSet = new Set(liveZips);
         const addedByLiveData = liveZips.filter(z => !staticSet.has(z));
@@ -1203,8 +1246,7 @@
     }
 
     function renderZipOptions(sourceLabel, stats, counted = false) {
-      const county = document.getElementById('apiCounty').value.trim();
-      const countyName = (MD_COUNTIES.find(c => c[0] === county) || [county, county])[1];
+      const countyName = getCountyLabel();
       const zipExplorer = document.getElementById('zipExplorer');
       const multi = document.getElementById('apiZipMulti');
 
@@ -1222,20 +1264,20 @@
     }
 
     function loadMarylandZipCodes() {
-      const county = document.getElementById('apiCounty').value.trim();
+      const selectedCounties = getSelectedApiCounties();
       const status = document.getElementById('apiStatus');
-      if (!county) return alert('Choose a county first, then click Show ZIPs Fast.');
+      if (!selectedCounties.length) return alert('Choose one or more counties first, then click Show ZIPs.');
 
-      const zips = MD_COUNTY_ZIPS[county] || [];
+      const zips = Array.from(new Set(selectedCounties.flatMap(c => MD_COUNTY_ZIPS[c] || []))).sort((a, b) => a.localeCompare(b));
       const stats = zips.map(zip => ({ zip, count: 0 }));
       renderZipOptions('Fast ZIP list loaded instantly from the built-in Maryland county ZIP library', stats, false);
-      status.innerHTML = `<strong>Fast ZIP mode ready.</strong> Loaded ${stats.length} ZIP codes instantly. Click Verify ZIPs to compare against live Maryland data, or select ZIPs and pull leads.`;
+      status.innerHTML = `<strong>Fast ZIP mode ready.</strong> Loaded ${stats.length} ZIP codes from ${getCountyLabel(selectedCounties)}. Click Verify ZIPs to compare against live Maryland data, or select ZIPs and pull leads.`;
     }
 
     async function deepScanMarylandZipCodes() {
-      const county = document.getElementById('apiCounty').value.trim();
+      const selectedCounties = getSelectedApiCounties();
       const status = document.getElementById('apiStatus');
-      if (!county) return alert('Choose a county first, then click Deep Scan ZIP Counts.');
+      if (!selectedCounties.length) return alert('Choose one or more counties first, then click Deep Scan ZIP Counts.');
 
       try {
         status.textContent = 'Deep scanning ZIP counts from Maryland Parcel Points. This may take longer...';
@@ -1351,8 +1393,8 @@
     async function downloadCountyBatches() {
       const status = document.getElementById('apiStatus');
       const selectedZips = getSelectedApiZips();
-      const county = document.getElementById('apiCounty').value.trim();
-      if (!county && !selectedZips.length) return alert('Choose a county or select ZIPs first.');
+      const selectedCounties = getSelectedApiCounties();
+      if (!selectedCounties.length && !selectedZips.length) return alert('Choose one or more counties or select ZIPs first.');
 
       const maxForExport = Math.max(1000, parseInt(document.getElementById('apiMax').value, 10) || 1000);
       const where = buildMarylandWhereClause({ zips: selectedZips });
@@ -1368,7 +1410,7 @@
         }
 
         const chunks = chunkArray(exportLeads, 1000);
-        const zipLabel = selectedZips.length ? selectedZips.join('-') : `county-${county || 'all-md'}`;
+        const zipLabel = selectedZips.length ? selectedZips.join('-') : `counties-${(selectedCounties.length ? selectedCounties : ['all-md']).join('-')}`;
         chunks.forEach((chunk, index) => {
           setTimeout(() => exportCSV(chunk, `roof-age-${zipLabel}-batch-${index + 1}-of-${chunks.length}.csv`), index * 700);
         });
@@ -1671,7 +1713,7 @@ Recommended Action: Offer free roof age & condition check with photo documentati
       countyZipStats = [];
       lastBatchExportRows = [];
 
-      setFieldValue('apiCounty', '');
+      setCountySelections([]);
       setFieldValue('apiZip', '');
       setFieldValue('apiMax', '1000');
       setFieldValue('apiYearFrom', '2005');
