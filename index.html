@@ -623,12 +623,13 @@
           <div class="compact-actions">
             <button class="light" onclick="loadMarylandZipCodes()">Show ZIPs</button>
             <button class="primary" onclick="pullMarylandPropertyData()">Pull Leads</button>
-            <button class="light" onclick="deepScanMarylandZipCodes()">Deep Scan</button>
+            <button class="light" onclick="verifyMarylandZipCoverage()">Verify ZIPs</button>
+            <button class="light" onclick="deepScanMarylandZipCodes()">Deep Scan Counts</button>
             <button class="dark" onclick="pullTopZipRoutes()">Pull Top ZIPs</button>
             <button class="green" onclick="downloadCountyBatches()">Batch Export</button>
             <button class="light" onclick="previewMarylandQuery()">Preview</button>
           </div>
-          <div id="apiStatus" class="hint quick-status">Ready. Use ZIP Safety Mode to avoid missing leads in ZIPs that cross county lines.</div>
+          <div id="apiStatus" class="hint quick-status">Ready. Use Verify ZIPs to compare the built-in ZIP list against Maryland live parcel data.</div>
           <div id="zipExplorer" class="hidden" style="margin-top:12px"></div>
 
           <div class="secondary-tools">
@@ -757,7 +758,7 @@
                     <th>Age</th>
                     <th>ZIP</th>
                     <th>Neighborhood</th>
-                    <th>Owner</th>
+                    <th>Owner / Mailing</th>
                     <th>Notes</th>
                     <th>Actions</th>
                   </tr>
@@ -913,23 +914,25 @@
       const zip = a.PREMZIP || a.ZIPCODE || '';
       const yearBuilt = parseInt(a.YEARBLT, 10);
       const neighborhood = a.DESCSUBD || a.DESCTOWN || '';
-      const owner = [a.OWNADD1, a.OWNADD2].filter(Boolean).join(' ');
+      const ownerMailingAddress = [a.OWNADD1, a.OWNADD2, a.OWNCITY, a.OWNSTATE, a.OWNERZIP].filter(Boolean).join(', ');
+      const owner = 'Owner name not provided by Maryland Parcel Points';
       const landUse = a.DESCLU ? `Land Use: ${a.DESCLU}` : '';
       const countyCode = a.JURSCODE ? `County: ${a.JURSCODE}` : '';
       const style = a.DESCSTYL ? `Style: ${a.DESCSTYL}` : '';
       const bldg = a.DESCBLDG ? `Building: ${a.DESCBLDG}` : '';
       const sqft = a.SQFTSTRC ? `Sq Ft: ${a.SQFTSTRC}` : '';
       const acct = a.ACCTID ? `SDAT Acct: ${a.ACCTID}` : '';
+      const ownerOccupied = a.OOI ? `Owner Occupied: ${a.OOI}` : '';
       const sdatUrl = a.SDATWEBADR ? `SDAT URL: ${a.SDATWEBADR}` : '';
-      const notes = [countyCode, landUse, style, bldg, sqft, acct, sdatUrl].filter(Boolean).join(' | ');
-      const lead = createLead({ address, city, state: 'MD', zip, yearBuilt, owner, neighborhood, notes });
+      const notes = [countyCode, landUse, ownerOccupied, style, bldg, sqft, acct, sdatUrl].filter(Boolean).join(' | ');
+      const lead = createLead({ address, city, state: 'MD', zip, yearBuilt, owner, neighborhood, notes, ownerMailingAddress });
       lead.source = 'Maryland Parcel Points';
       lead.lat = feature.geometry?.y || '';
       lead.lng = feature.geometry?.x || '';
       return lead;
     }
 
-    function createLead({ address, city, state='MD', zip, yearBuilt, owner='', neighborhood='', notes='' }) {
+    function createLead({ address, city, state='MD', zip, yearBuilt, owner='', ownerMailingAddress='', neighborhood='', notes='' }) {
       const numericYear = parseInt(yearBuilt, 10);
       const age = Number.isFinite(numericYear) ? CURRENT_YEAR - numericYear : 0;
       const cleanAddress = normalize(address);
@@ -946,6 +949,7 @@
         yearBuilt: Number.isFinite(numericYear) ? numericYear : '',
         age,
         owner: normalize(owner),
+        ownerMailingAddress: normalize(ownerMailingAddress),
         neighborhood: normalize(neighborhood) || deriveNeighborhood(cleanAddress),
         notes: normalize(notes),
         fullAddress,
@@ -1075,7 +1079,7 @@
       const params = new URLSearchParams({
         f: 'json',
         where,
-        outFields: 'OBJECTID,JURSCODE,ACCTID,ADDRESS,CITY,ZIPCODE,OWNADD1,OWNADD2,PREMSNUM,PREMSDIR,PREMSNAM,PREMSTYP,PREMCITY,PREMZIP,YEARBLT,DESCSUBD,DESCTOWN,DESCLU,SQFTSTRC,DESCSTYL,DESCBLDG,SDATWEBADR',
+        outFields: 'OBJECTID,JURSCODE,ACCTID,ADDRESS,CITY,ZIPCODE,OWNADD1,OWNADD2,OWNCITY,OWNSTATE,OWNERZIP,OWNZIP2,OOI,RESITYP,PREMSNUM,PREMSDIR,PREMSNAM,PREMSTYP,PREMCITY,PREMZIP,YEARBLT,DESCSUBD,DESCTOWN,DESCLU,SQFTSTRC,DESCSTYL,DESCBLDG,SDATWEBADR',
         returnGeometry: 'true',
         outSR: '4326',
         orderByFields: 'PREMZIP ASC, YEARBLT ASC',
@@ -1096,6 +1100,63 @@
         resultRecordCount: String(count)
       });
       return `${MD_PROPERTY_LAYER_URL}?${params.toString()}`;
+    }
+
+
+    function buildMarylandDistinctZipUrl(where) {
+      const params = new URLSearchParams({
+        f: 'json',
+        where,
+        outFields: 'PREMZIP',
+        returnGeometry: 'false',
+        returnDistinctValues: 'true',
+        orderByFields: 'PREMZIP ASC',
+        resultRecordCount: '2000'
+      });
+      return `${MD_PROPERTY_LAYER_URL}?${params.toString()}`;
+    }
+
+    async function fetchLiveCountyZips() {
+      const where = buildMarylandWhereClause({ zips: [] });
+      const res = await fetch(buildMarylandDistinctZipUrl(where));
+      if (!res.ok) throw new Error(`Maryland service returned ${res.status}`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message || 'ArcGIS distinct ZIP query error');
+      return Array.from(new Set((data.features || [])
+        .map(f => String(f.attributes?.PREMZIP || '').trim().slice(0, 5))
+        .filter(z => z.length === 5)))
+        .sort((a, b) => a.localeCompare(b));
+    }
+
+    async function verifyMarylandZipCoverage() {
+      const county = document.getElementById('apiCounty').value.trim();
+      const status = document.getElementById('apiStatus');
+      if (!county) return alert('Choose a county first, then click Verify ZIPs.');
+
+      try {
+        status.textContent = 'Verifying ZIP coverage against live Maryland Parcel Points...';
+        const liveZips = await fetchLiveCountyZips();
+        const staticZips = MD_COUNTY_ZIPS[county] || [];
+        const staticSet = new Set(staticZips);
+        const liveSet = new Set(liveZips);
+        const addedByLiveData = liveZips.filter(z => !staticSet.has(z));
+        const notActiveForCriteria = staticZips.filter(z => !liveSet.has(z));
+        const merged = Array.from(new Set([...staticZips, ...liveZips])).sort((a, b) => a.localeCompare(b));
+        const stats = merged.map(zip => ({ zip, count: 0 }));
+
+        renderZipOptions('Verified against live Maryland Parcel Points ZIP values for the selected county/year/filter', stats, false);
+
+        const details = [];
+        if (addedByLiveData.length) details.push(`<strong>Added from live data:</strong> ${addedByLiveData.join(', ')}`);
+        if (notActiveForCriteria.length) details.push(`<strong>In built-in list but no live matches for current criteria:</strong> ${notActiveForCriteria.join(', ')}`);
+        if (!details.length) details.push('Built-in ZIP list matches the live Maryland results for the current criteria.');
+
+        document.getElementById('zipExplorer').insertAdjacentHTML('afterbegin', `<div class="section-note"><strong>Coverage Check Complete:</strong> ${details.join('<br>')}</div>`);
+        status.innerHTML = `<strong>Verified.</strong> ${merged.length} ZIPs available after merging built-in list with live Maryland results.`;
+      } catch (err) {
+        console.error(err);
+        status.innerHTML = `<strong style="color:#b91c1c">ZIP verification failed.</strong> ${escapeHtml(err.message)}<br>Fast ZIP mode still works, or use Deep Scan Counts as a fallback.`;
+      }
     }
 
     async function fetchMarylandFeatures(where, maxRecords, progressText = 'Pulling records') {
@@ -1147,7 +1208,7 @@
       const zips = MD_COUNTY_ZIPS[county] || [];
       const stats = zips.map(zip => ({ zip, count: 0 }));
       renderZipOptions('Fast ZIP list loaded instantly from the built-in Maryland county ZIP library', stats, false);
-      status.innerHTML = `<strong>Fast ZIP mode ready.</strong> Loaded ${stats.length} ZIP codes instantly. Select the ZIPs you want, then pull leads.`;
+      status.innerHTML = `<strong>Fast ZIP mode ready.</strong> Loaded ${stats.length} ZIP codes instantly. Click Verify ZIPs to compare against live Maryland data, or select ZIPs and pull leads.`;
     }
 
     async function deepScanMarylandZipCodes() {
@@ -1335,7 +1396,7 @@
           <td>${l.age}</td>
           <td>${escapeHtml(l.zip)}</td>
           <td>${escapeHtml(l.neighborhood)}</td>
-          <td>${escapeHtml(l.owner)}</td>
+          <td>${escapeHtml(l.owner)}${l.ownerMailingAddress ? `<br><span class="hint">${escapeHtml(l.ownerMailingAddress)}</span>` : ''}</td>
           <td>${escapeHtml(l.notes)}</td>
           <td>
             <div class="mini-actions">
@@ -1438,8 +1499,8 @@
 
     function exportCSV(data, filename) {
       if (!data || !data.length) return alert('Nothing to export.');
-      const headers = ['priority','score','property_address','city','state','zip','year_built','age','owner_name','neighborhood','notes','google_maps'];
-      const rows = data.map(l => [l.priority,l.score,l.address,l.city,l.state,l.zip,l.yearBuilt,l.age,l.owner,l.neighborhood,l.notes,mapsLink(l)]);
+      const headers = ['priority','score','property_address','city','state','zip','year_built','age','owner_name','owner_mailing_address','neighborhood','notes','google_maps'];
+      const rows = data.map(l => [l.priority,l.score,l.address,l.city,l.state,l.zip,l.yearBuilt,l.age,l.owner,l.ownerMailingAddress || '',l.neighborhood,l.notes,mapsLink(l)]);
       const csv = [headers, ...rows].map(r => r.map(csvCell).join(',')).join('\n');
       downloadText(csv, filename, 'text/csv');
     }
