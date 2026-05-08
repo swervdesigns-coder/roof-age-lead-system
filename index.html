@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Simple Solutions | Roof Age Lead System V7.2</title>
+  <title>Simple Solutions | Roof Age Lead System V7.3</title>
   <style>
     :root {
       --maroon: #7a0f1b;
@@ -541,7 +541,7 @@
           <h2>Lead Builder</h2>
         </div>
         <div class="card-body">
-          <div class="lead-builder-badge">⚡ V7.2 Owner Enrichment · True Refresh Reset</div>
+          <div class="lead-builder-badge">⚡ V7.3 Owner Enrichment · Auto-Reset Pulls</div>
           <div class="command-card">
             <h3>Pull Maryland Property Data</h3>
             <p>Pick a county, choose residential/commercial/both, pull leads, open exact SDAT records, and optionally enrich owner names through the included Vercel API route.</p>
@@ -870,6 +870,7 @@
     let leads = [];
     let routeLeads = [];
     let countyZipStats = [];
+    let lastBatchExportRows = [];
     let ownerEnrichInProgress = false;
 
     const normalize = value => String(value ?? '').trim();
@@ -1302,28 +1303,42 @@
       const maxWanted = Math.max(1, parseInt(document.getElementById('apiMax').value, 10) || 1000);
       let allNew = [];
 
+      // IMPORTANT V7.3 CHANGE:
+      // Every new Pull Leads run starts with a clean dashboard instead of adding to the previous run.
+      // This prevents inflated dashboard tiles when users test multiple counties, ZIPs, or year ranges.
+      leads = [];
+      routeLeads = [];
+      const routeOutput = document.getElementById('routeOutput');
+      if (routeOutput) routeOutput.innerHTML = '';
+      renderAll();
+
       status.textContent = selectedZips.length > 1
-        ? `Connecting to Maryland Parcel Points for ${selectedZips.length} selected ZIPs...`
-        : 'Connecting to Maryland Parcel Points...';
+        ? `Starting fresh, then connecting to Maryland Parcel Points for ${selectedZips.length} selected ZIPs...`
+        : 'Starting fresh, then connecting to Maryland Parcel Points...';
 
       try {
         const features = await fetchMarylandFeatures(where, maxWanted, 'Pulling selected lead records');
         allNew = features.map(leadFromMarylandFeature).filter(l => l.address && l.yearBuilt);
 
-        const existingKeys = new Set(leads.map(l => `${l.address}|${l.zip}|${l.yearBuilt}`.toLowerCase()));
+        const seenKeys = new Set();
         const uniqueNew = allNew.filter(l => {
           const key = `${l.address}|${l.zip}|${l.yearBuilt}`.toLowerCase();
-          if (existingKeys.has(key)) return false;
-          existingKeys.add(key);
+          if (seenKeys.has(key)) return false;
+          seenKeys.add(key);
           return true;
         });
 
-        leads = [...leads, ...uniqueNew].map(scoreLead);
+        leads = uniqueNew.map(scoreLead);
         renderAll();
-        status.innerHTML = allNew.length ? `<strong>Done.</strong> Pulled ${allNew.length} records and added ${uniqueNew.length} new leads. Duplicates were skipped.` : `<strong>No matching records found.</strong> Try widening the year range, turning Residential Filter to All property types, clearing county, or using Preview to inspect the query.`;
+        status.innerHTML = allNew.length
+          ? `<strong>Done.</strong> Fresh search complete. Pulled ${allNew.length} records and loaded ${uniqueNew.length} unique leads. Previous dashboard results were cleared first.`
+          : `<strong>No matching records found.</strong> Previous dashboard results were cleared. Try widening the year range, changing the Property Type Filter, clearing county, or using Preview to inspect the query.`;
       } catch (err) {
         console.error(err);
-        status.innerHTML = `<strong style="color:#b91c1c">Could not pull data.</strong> ${escapeHtml(err.message)}<br>Try fewer ZIPs, a smaller year range, or use Download County/ZIP Batches.`;
+        leads = [];
+        routeLeads = [];
+        renderAll();
+        status.innerHTML = `<strong style="color:#b91c1c">Could not pull data.</strong> The dashboard was cleared before the failed run. ${escapeHtml(err.message)}<br>Try fewer ZIPs, a smaller year range, or use Batch Export.`;
       }
     }
 
