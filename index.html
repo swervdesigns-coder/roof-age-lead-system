@@ -513,6 +513,56 @@
       .tab-panel { min-height: auto; }
     }
 
+
+    /* V7.5 Street View hover preview */
+    .address-hover {
+      cursor: crosshair;
+      border-bottom: 1px dashed rgba(122,15,27,.55);
+      font-weight: 800;
+      color: #111827;
+    }
+    .address-hover:hover { color: var(--maroon); }
+    #streetViewPreview {
+      position: fixed;
+      z-index: 9999;
+      width: 360px;
+      max-width: calc(100vw - 28px);
+      background: #fff;
+      border: 1px solid rgba(15,23,42,.14);
+      border-radius: 18px;
+      box-shadow: 0 24px 70px rgba(15,23,42,.30);
+      overflow: hidden;
+      display: none;
+      pointer-events: none;
+    }
+    #streetViewPreview.active { display: block; }
+    .streetview-head {
+      padding: 10px 12px;
+      background: linear-gradient(135deg, #111827, #4f0911);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1.35;
+    }
+    .streetview-frame-wrap {
+      width: 100%;
+      height: 230px;
+      background: #f1f5f9;
+    }
+    #streetViewFrame {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+    }
+    .streetview-foot {
+      padding: 8px 12px;
+      color: #64748b;
+      background: #f8fafc;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
   </style>
 </head>
 <body>
@@ -834,6 +884,13 @@
       </section>
     </div>
   </main>
+
+
+  <div id="streetViewPreview" aria-hidden="true">
+    <div id="streetViewTitle" class="streetview-head">Street View Preview</div>
+    <div class="streetview-frame-wrap"><iframe id="streetViewFrame" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
+    <div class="streetview-foot">Hover preview uses Google Maps. If Street View is unavailable, Google may show a map or nearby view.</div>
+  </div>
 
   <script>
     const CURRENT_YEAR = new Date().getFullYear();
@@ -1524,7 +1581,7 @@
         <tr>
           <td><span class="badge ${badgeClass(l.priority)}">${l.priority}</span></td>
           <td><strong>${l.score}</strong></td>
-          <td>${escapeHtml(l.address)}<br><span class="hint">${escapeHtml([l.city,l.state,l.zip].filter(Boolean).join(', '))}</span></td>
+          <td><span class="address-hover" onmouseenter="showStreetViewPreview(event, '${l.id}')" onmousemove="moveStreetViewPreview(event)" onmouseleave="hideStreetViewPreview()">${escapeHtml(l.address)}</span><br><span class="hint">${escapeHtml([l.city,l.state,l.zip].filter(Boolean).join(', '))}</span></td>
           <td>${l.yearBuilt}</td>
           <td>${l.age}</td>
           <td>${escapeHtml(l.zip)}</td>
@@ -1794,6 +1851,54 @@ Recommended Action: Offer free roof age & condition check with photo documentati
       renderLeads();
       renderNeighborhoods();
       renderStats();
+    }
+
+
+    function getStreetViewEmbedUrl(lead) {
+      if (lead.lat && lead.lng) {
+        const lat = encodeURIComponent(lead.lat);
+        const lng = encodeURIComponent(lead.lng);
+        return `https://www.google.com/maps?q=&layer=c&cbll=${lat},${lng}&cbp=11,0,0,0,0&output=svembed`;
+      }
+      const query = encodeURIComponent(lead.fullAddress || `${lead.address}, ${lead.city}, ${lead.state} ${lead.zip}`);
+      return `https://www.google.com/maps?q=${query}&output=embed`;
+    }
+
+    function showStreetViewPreview(event, leadId) {
+      const lead = leads.find(l => l.id === leadId);
+      if (!lead) return;
+      const box = document.getElementById('streetViewPreview');
+      const frame = document.getElementById('streetViewFrame');
+      const title = document.getElementById('streetViewTitle');
+      title.textContent = `Street View Preview · ${lead.address}`;
+      const url = getStreetViewEmbedUrl(lead);
+      if (frame.dataset.src !== url) {
+        frame.dataset.src = url;
+        frame.src = url;
+      }
+      box.classList.add('active');
+      moveStreetViewPreview(event);
+    }
+
+    function moveStreetViewPreview(event) {
+      const box = document.getElementById('streetViewPreview');
+      if (!box) return;
+      const margin = 18;
+      const width = box.offsetWidth || 360;
+      const height = box.offsetHeight || 300;
+      let left = event.clientX + margin;
+      let top = event.clientY + margin;
+      if (left + width > window.innerWidth - 10) left = event.clientX - width - margin;
+      if (top + height > window.innerHeight - 10) top = window.innerHeight - height - 10;
+      if (top < 10) top = 10;
+      if (left < 10) left = 10;
+      box.style.left = `${left}px`;
+      box.style.top = `${top}px`;
+    }
+
+    function hideStreetViewPreview() {
+      const box = document.getElementById('streetViewPreview');
+      if (box) box.classList.remove('active');
     }
 
     function mapsLink(l) {
