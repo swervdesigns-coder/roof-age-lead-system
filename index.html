@@ -514,14 +514,49 @@
     }
 
 
-    /* V7.5 Street View hover preview */
-    .address-hover {
-      cursor: crosshair;
-      border-bottom: 1px dashed rgba(122,15,27,.55);
-      font-weight: 800;
-      color: #111827;
+    /* V7.6 Street View icon availability */
+    .streetview-cell { min-width: 74px; }
+    .streetview-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 999px;
+      border: 1px solid rgba(122,15,27,.28);
+      background: linear-gradient(135deg, #ffffff, #fff5f6);
+      color: var(--maroon);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 9px 18px rgba(15,23,42,.10);
+      text-decoration: none;
     }
-    .address-hover:hover { color: var(--maroon); }
+    .streetview-icon:hover { transform: translateY(-1px); box-shadow: 0 14px 25px rgba(15,23,42,.18); }
+    .streetview-na {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 42px;
+      padding: 6px 8px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      color: #6b7280;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .streetview-checking {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 70px;
+      padding: 6px 8px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #1d4ed8;
+      font-size: 12px;
+      font-weight: 900;
+    }
     #streetViewPreview {
       position: fixed;
       z-index: 9999;
@@ -646,6 +681,9 @@
               <input id="zipSafetyMode" type="checkbox" checked />
               <span>Coverage Safety Mode: when ZIPs are selected, search the ZIP across Maryland instead of locking it to one county.</span>
             </label>
+            <label>Google Street View API Key</label>
+            <input id="streetViewApiKey" type="password" placeholder="Optional: enables Street View availability checks" oninput="saveStreetViewApiKey()" />
+            <div class="hint">To show Street View icons only when imagery exists, add a Google Maps Platform key with Street View Static API enabled. Without a key, Street View cells show N/A.</div>
             <div class="hint">Use a manual ZIP for a quick check, or select multiple ZIPs below. Batch Export keeps large pulls in 1,000-row files.</div>
           </div>
 
@@ -814,6 +852,7 @@
                     <th>Priority</th>
                     <th>Score</th>
                     <th>Address</th>
+                    <th>Street View</th>
                     <th>Year</th>
                     <th>Age</th>
                     <th>ZIP</th>
@@ -1030,6 +1069,9 @@
         acctid: normalize(acctid),
         jurscode: normalize(jurscode),
         propertyType: normalize(propertyType),
+        streetViewStatus: 'unknown',
+        streetViewPanoId: '',
+        streetViewChecked: false,
         ownerEnriched: false,
         fullAddress,
         score: 0,
@@ -1581,7 +1623,8 @@
         <tr>
           <td><span class="badge ${badgeClass(l.priority)}">${l.priority}</span></td>
           <td><strong>${l.score}</strong></td>
-          <td><span class="address-hover" onmouseenter="showStreetViewPreview(event, '${l.id}')" onmousemove="moveStreetViewPreview(event)" onmouseleave="hideStreetViewPreview()">${escapeHtml(l.address)}</span><br><span class="hint">${escapeHtml([l.city,l.state,l.zip].filter(Boolean).join(', '))}</span></td>
+          <td><strong>${escapeHtml(l.address)}</strong><br><span class="hint">${escapeHtml([l.city,l.state,l.zip].filter(Boolean).join(', '))}</span></td>
+          <td class="streetview-cell">${streetViewCell(l)}</td>
           <td>${l.yearBuilt}</td>
           <td>${l.age}</td>
           <td>${escapeHtml(l.zip)}</td>
@@ -1598,7 +1641,7 @@
             </div>
           </td>
         </tr>`).join('');
-      document.getElementById('leadRows').innerHTML = rows || `<tr><td colspan="10">No leads yet. Pull Maryland data, import a CSV, or load demo data.</td></tr>`;
+      document.getElementById('leadRows').innerHTML = rows || `<tr><td colspan="11">No leads yet. Pull Maryland data, import a CSV, or load demo data.</td></tr>`;
     }
 
     function renderStats() {
@@ -1851,10 +1894,95 @@ Recommended Action: Offer free roof age & condition check with photo documentati
       renderLeads();
       renderNeighborhoods();
       renderStats();
+      queueStreetViewChecksForVisibleLeads();
     }
 
 
+    function getStreetViewApiKey() {
+      return normalize(document.getElementById('streetViewApiKey')?.value || localStorage.getItem('roofLeadStreetViewApiKey') || '');
+    }
+
+    function saveStreetViewApiKey() {
+      const key = normalize(document.getElementById('streetViewApiKey')?.value || '');
+      if (key) localStorage.setItem('roofLeadStreetViewApiKey', key);
+      else localStorage.removeItem('roofLeadStreetViewApiKey');
+      leads = leads.map(l => ({ ...l, streetViewStatus: 'unknown', streetViewPanoId: '', streetViewChecked: false }));
+      renderAll();
+    }
+
+    function loadStreetViewApiKey() {
+      const input = document.getElementById('streetViewApiKey');
+      if (input) input.value = localStorage.getItem('roofLeadStreetViewApiKey') || '';
+    }
+
+    function getStreetViewLocation(lead) {
+      if (lead.lat && lead.lng) return `${lead.lat},${lead.lng}`;
+      return lead.fullAddress || `${lead.address}, ${lead.city}, ${lead.state} ${lead.zip}`;
+    }
+
+    function streetViewCell(lead) {
+      const key = getStreetViewApiKey();
+      if (!key) return '<span class="streetview-na" title="Add Google Street View API key to enable availability checks">N/A</span>';
+      if (lead.streetViewStatus === 'available') {
+        return `<a class="streetview-icon" target="_blank" rel="noopener" href="${streetViewLink(lead)}" onmouseenter="showStreetViewPreview(event, '${lead.id}')" onmousemove="moveStreetViewPreview(event)" onmouseleave="hideStreetViewPreview()" title="Street View available — hover to preview or click to open">👁</a>`;
+      }
+      if (lead.streetViewStatus === 'checking') return '<span class="streetview-checking">Checking</span>';
+      if (lead.streetViewStatus === 'unavailable') return '<span class="streetview-na">N/A</span>';
+      return '<span class="streetview-checking">Queued</span>';
+    }
+
+    function streetViewLink(lead) {
+      if (lead.streetViewPanoId) return `https://www.google.com/maps/@?api=1&map_action=pano&pano=${encodeURIComponent(lead.streetViewPanoId)}`;
+      if (lead.lat && lead.lng) return `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${encodeURIComponent(lead.lat + ',' + lead.lng)}`;
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lead.fullAddress || lead.address)}`;
+    }
+
+    let streetViewCheckTimer = null;
+    function queueStreetViewChecksForVisibleLeads() {
+      const key = getStreetViewApiKey();
+      if (!key || !leads.length) return;
+      clearTimeout(streetViewCheckTimer);
+      streetViewCheckTimer = setTimeout(() => checkStreetViewForVisibleLeads(), 250);
+    }
+
+    async function checkStreetViewForVisibleLeads() {
+      const key = getStreetViewApiKey();
+      if (!key) return;
+      const visible = filteredLeads().filter(l => l.streetViewStatus === 'unknown').slice(0, 60);
+      for (const lead of visible) lead.streetViewStatus = 'checking';
+      if (visible.length) renderLeads();
+      for (const lead of visible) {
+        try {
+          await checkStreetViewAvailability(lead, key);
+        } catch (err) {
+          lead.streetViewStatus = 'unavailable';
+          lead.streetViewChecked = true;
+        }
+        renderLeads();
+        await new Promise(r => setTimeout(r, 90));
+      }
+    }
+
+    async function checkStreetViewAvailability(lead, key) {
+      const location = encodeURIComponent(getStreetViewLocation(lead));
+      const url = `https://maps.googleapis.com/maps/api/streetview/metadata?location=${location}&radius=75&source=outdoor&key=${encodeURIComponent(key)}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Street View metadata returned ${res.status}`);
+      const data = await res.json();
+      if (data.status === 'OK') {
+        lead.streetViewStatus = 'available';
+        lead.streetViewPanoId = data.pano_id || '';
+      } else {
+        lead.streetViewStatus = 'unavailable';
+        lead.streetViewPanoId = '';
+      }
+      lead.streetViewChecked = true;
+    }
+
     function getStreetViewEmbedUrl(lead) {
+      if (lead.streetViewPanoId) {
+        return `https://www.google.com/maps?output=svembed&panoid=${encodeURIComponent(lead.streetViewPanoId)}`;
+      }
       if (lead.lat && lead.lng) {
         const lat = encodeURIComponent(lead.lat);
         const lng = encodeURIComponent(lead.lng);
@@ -1951,6 +2079,7 @@ Recommended Action: Offer free roof age & condition check with photo documentati
       reader.readAsText(file);
     });
 
+    loadStreetViewApiKey();
     generateCampaignCopy();
     renderAll();
   </script>
