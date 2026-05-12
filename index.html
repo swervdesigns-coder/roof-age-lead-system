@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Simple Solutions | Roof Age Lead System V7.3</title>
+  <title>Simple Solutions | Roof Age Lead System V7.10</title>
   <style>
     :root {
       --maroon: #7a0f1b;
@@ -244,6 +244,34 @@
       width: auto;
       margin-top: 2px;
       accent-color: var(--maroon);
+    }
+
+
+    .zip-workflow-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #fff, #fafafa);
+      padding: 12px;
+      margin-top: 12px;
+    }
+    .zip-workflow-card .zip-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .zip-workflow-card .zip-actions button { width: 100%; }
+    .version-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 4px 8px;
+      background: #fef2f2;
+      color: var(--maroon);
+      font-weight: 900;
+      font-size: 11px;
+      margin-left: 6px;
     }
 
     @media (max-width: 1100px) {
@@ -667,7 +695,7 @@
           <h2>Lead Builder</h2>
         </div>
         <div class="card-body">
-          <div class="lead-builder-badge">⚡ V7.9 Route Selection · Street View Setup Fix</div>
+          <div class="lead-builder-badge">⚡ V7.10 Stable Multi-ZIP Pull · Route Selection</div>
           <div class="command-card">
             <h3>Pull Maryland Property Data</h3>
             <p>Pick a county, choose residential/commercial/both, pull leads, open exact SDAT records, and optionally enrich owner names through the included Vercel API route.</p>
@@ -710,31 +738,39 @@
           <div class="query-card">
             <div class="row tight-row">
               <div>
-                <label>Manual ZIP</label>
+                <label>Manual ZIP Search</label>
                 <input id="apiZip" placeholder="Optional: 20678" />
+                <div class="hint">Use this for one ZIP. Leave blank when using the multi-select ZIP list below.</div>
               </div>
               <div>
                 <label>Load Limit</label>
                 <input id="apiMax" type="number" value="1000" />
+                <div class="hint">Total records to load into the table for this run.</div>
               </div>
             </div>
             <label class="toggle-line">
               <input id="zipSafetyMode" type="checkbox" checked />
-              <span>Coverage Safety Mode: when ZIPs are selected, search the ZIP across Maryland instead of locking it to one county.</span>
+              <span>Coverage Safety Mode: for a single/manual ZIP, search across Maryland so cross-county ZIPs are not missed. Large multi-ZIP pulls stay county-limited for speed.</span>
             </label>
             <label>Google Street View API Key</label>
             <input id="streetViewApiKey" type="password" placeholder="Optional: enables Street View availability checks" oninput="saveStreetViewApiKey()" />
-            <div class="hint">Optional locally. On Vercel, set GOOGLE_MAPS_API_KEY as an environment variable. The house icon only appears after Google verifies Street View exists. No verified Street View = N/A.</div>
-            <div class="hint">Use a manual ZIP for a quick check, or select multiple ZIPs below. Batch Export keeps large pulls in 1,000-row files.</div>
+            <div class="hint">Optional locally. On Vercel, set GOOGLE_MAPS_API_KEY as an environment variable. The house icon only appears after Google verifies Street View exists.</div>
           </div>
 
-          <label>Selected ZIP Codes</label>
-          <select id="apiZipMulti" multiple size="7" style="min-height:145px">
-            <option value="">Choose a county, then click Show ZIPs in County</option>
-          </select>
-          <div class="btns">
-            <button class="light" onclick="selectAllZipOptions()">Select All ZIPs</button>
-            <button class="light" onclick="clearZipOptions()">Clear ZIPs</button>
+          <div class="zip-workflow-card">
+            <label>ZIP Code Selection</label>
+            <select id="apiZipMulti" multiple size="7" style="min-height:145px">
+              <option value="">Choose county/counties, then click Show ZIPs</option>
+            </select>
+            <div class="zip-actions">
+              <button class="light" onclick="loadMarylandZipCodes()">Show ZIPs</button>
+              <button class="light" onclick="selectAllZipOptions()">Select All ZIPs</button>
+              <button class="light" onclick="clearZipOptions()">Clear ZIPs</button>
+              <button class="light" onclick="verifyMarylandZipCoverage()">Verify ZIPs</button>
+              <button class="light" onclick="deepScanMarylandZipCodes()">Deep Scan Counts</button>
+              <button class="dark" onclick="pullTopZipRoutes()">Pull Top ZIPs</button>
+            </div>
+            <div class="hint">Workflow: select county → Show ZIPs → pick ZIPs or Select All → Pull Leads.</div>
           </div>
 
           <div class="row">
@@ -756,17 +792,13 @@
           </select>
 
           <div class="compact-actions">
-            <button class="light" onclick="loadMarylandZipCodes()">Show ZIPs</button>
             <button class="primary" onclick="pullMarylandPropertyData()">Pull Leads</button>
             <button class="blue" onclick="refreshCurrentSearch()">Refresh / Start Fresh</button>
-            <button class="light" onclick="verifyMarylandZipCoverage()">Verify ZIPs</button>
-            <button class="light" onclick="deepScanMarylandZipCodes()">Deep Scan Counts</button>
-            <button class="dark" onclick="pullTopZipRoutes()">Pull Top ZIPs</button>
             <button class="green" onclick="downloadCountyBatches()">Batch Export</button>
-            <button class="light" onclick="previewMarylandQuery()">Preview</button>
+            <button class="light" onclick="previewMarylandQuery()">Preview Query</button>
             <button class="blue" onclick="enrichVisibleOwners()">Enrich Visible Owners</button>
           </div>
-          <div id="apiStatus" class="hint quick-status">Ready. Use Property Type Filter, pull leads, then click Open SDAT or Enrich Owner.</div>
+          <div id="apiStatus" class="hint quick-status">Ready. <span class="version-pill" id="versionPill">V7.10</span> Use Property Type Filter, select ZIPs, then Pull Leads.</div>
           <div id="zipExplorer" class="hidden" style="margin-top:12px"></div>
 
           <div class="secondary-tools">
@@ -982,6 +1014,7 @@
   </div>
 
   <script>
+    const APP_VERSION = 'V7.10';
     const CURRENT_YEAR = new Date().getFullYear();
     const MD_PROPERTY_LAYER_URL = 'https://mdgeodata.md.gov/imap/rest/services/PlanningCadastre/MD_PropertyData/MapServer/0/query';
     const MD_COUNTIES = [
@@ -1023,6 +1056,7 @@
     let countyZipStats = [];
     let lastBatchExportRows = [];
     let ownerEnrichInProgress = false;
+    let activePullController = null;
 
     const normalize = value => String(value ?? '').trim();
     const cleanHeader = h => normalize(h).toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -1229,6 +1263,43 @@
       return `((PREMZIP IN (${quoted})) OR (ZIPCODE IN (${quoted})))`;
     }
 
+    function getManualZipValue() {
+      return String(document.getElementById('apiZip')?.value || '').trim().slice(0, 5);
+    }
+
+    function getAvailableZipOptions() {
+      const multi = document.getElementById('apiZipMulti');
+      if (!multi) return [];
+      return Array.from(multi.options).map(o => o.value).filter(Boolean);
+    }
+
+    function allVisibleZipOptionsSelected(selectedZips = getSelectedApiZips()) {
+      const visible = getAvailableZipOptions();
+      if (!visible.length || !selectedZips.length) return false;
+      const selectedSet = new Set(selectedZips);
+      return visible.every(z => selectedSet.has(z));
+    }
+
+    function shouldCountyLockMultiZip(selectedZips, selectedCounties) {
+      const manualZip = getManualZipValue();
+      if (!selectedCounties.length) return false;
+      if (!selectedZips.length) return true;
+      if (manualZip && selectedZips.length === 1) return false;
+      if (allVisibleZipOptionsSelected(selectedZips)) return true;
+      return selectedZips.length > 3;
+    }
+
+    function getPullWhereClause() {
+      const selectedZips = getSelectedApiZips();
+      const selectedCounties = getSelectedApiCounties();
+      const countyLock = shouldCountyLockMultiZip(selectedZips, selectedCounties);
+      if (countyLock && allVisibleZipOptionsSelected(selectedZips)) {
+        // If all ZIPs in the visible county list are selected, using county-only is faster and avoids long ArcGIS IN() queries.
+        return buildMarylandWhereClause({ counties: selectedCounties, zips: [], forceCountyWithZips: true });
+      }
+      return buildMarylandWhereClause({ counties: selectedCounties, zips: selectedZips, forceCountyWithZips: countyLock });
+    }
+
     function buildMarylandWhereClause(options = {}) {
       const selectedCounties = options.counties ?? (options.county !== undefined ? [options.county].filter(Boolean) : getSelectedApiCounties());
       const selectedZips = options.zips ?? (options.zip !== undefined ? [options.zip].filter(Boolean) : getSelectedApiZips());
@@ -1239,7 +1310,10 @@
 
       const zipWhere = buildZipWhere(selectedZips);
       const safetyMode = document.getElementById('zipSafetyMode')?.checked !== false;
-      if (selectedCounties.length && !(safetyMode && zipWhere)) {
+      const forceCountyWithZips = options.forceCountyWithZips === true;
+      const manualZip = getManualZipValue();
+      const smallZipSafetySearch = safetyMode && zipWhere && selectedZips.length <= 3 && manualZip;
+      if (selectedCounties.length && (forceCountyWithZips || !smallZipSafetySearch)) {
         const quotedCounties = selectedCounties.map(c => `'${String(c).replace(/'/g, "''")}'`).join(',');
         parts.push(`JURSCODE IN (${quotedCounties})`);
       }
@@ -1283,7 +1357,7 @@
     }
 
     function previewMarylandQuery() {
-      const where = buildMarylandWhereClause();
+      const where = getPullWhereClause();
       const url = buildMarylandUrl(where, 0, 25);
       document.getElementById('apiStatus').innerHTML = `<strong>Query Preview:</strong><br><code style="word-break:break-all">${escapeHtml(where)}</code><br><br><a target="_blank" href="${url}">Open test query</a>`;
     }
@@ -1490,7 +1564,8 @@
     async function pullMarylandPropertyData(showAlert = true) {
       const status = document.getElementById('apiStatus');
       const selectedZips = getSelectedApiZips();
-      const where = buildMarylandWhereClause({ zips: selectedZips });
+      const selectedCounties = getSelectedApiCounties();
+      const where = getPullWhereClause();
       const maxWanted = Math.max(1, parseInt(document.getElementById('apiMax').value, 10) || 1000);
       let allNew = [];
 
@@ -1505,9 +1580,15 @@
       if (routeOutput) routeOutput.innerHTML = '';
       renderAll();
 
-      status.textContent = selectedZips.length > 1
-        ? `Starting fresh, then connecting to Maryland Parcel Points for ${selectedZips.length} selected ZIPs...`
-        : 'Starting fresh, then connecting to Maryland Parcel Points...';
+      const zipModeMsg = allVisibleZipOptionsSelected(selectedZips) && selectedCounties.length
+        ? `county-wide search for ${getCountyLabel(selectedCounties)} using the selected year/property filters`
+        : selectedZips.length > 1
+          ? `${selectedZips.length} selected ZIPs`
+          : selectedZips.length === 1
+            ? `ZIP ${selectedZips[0]}`
+            : getCountyLabel(selectedCounties);
+
+      status.textContent = `Starting fresh, then connecting to Maryland Parcel Points for ${zipModeMsg}...`;
 
       try {
         const features = await fetchMarylandFeatures(where, maxWanted, 'Pulling selected lead records');
@@ -1524,7 +1605,7 @@
         leads = uniqueNew.map(scoreLead);
         renderAll();
         status.innerHTML = allNew.length
-          ? `<strong>Done.</strong> Fresh search complete. Pulled ${allNew.length} records and loaded ${uniqueNew.length} unique leads. Previous dashboard results were cleared first.`
+          ? `<strong>Done.</strong> ${APP_VERSION} fresh search complete. Pulled ${allNew.length} records and loaded ${uniqueNew.length} unique leads. Previous dashboard results were cleared first.`
           : `<strong>No matching records found.</strong> Previous dashboard results were cleared. Try widening the year range, changing the Property Type Filter, clearing county, or using Preview to inspect the query.`;
       } catch (err) {
         console.error(err);
@@ -1548,7 +1629,8 @@
       if (!selectedCounties.length && !selectedZips.length) return alert('Choose one or more counties or select ZIPs first.');
 
       const maxForExport = Math.max(1000, parseInt(document.getElementById('apiMax').value, 10) || 1000);
-      const where = buildMarylandWhereClause({ zips: selectedZips });
+      const selectedCounties = getSelectedApiCounties();
+      const where = getPullWhereClause();
 
       try {
         status.textContent = 'Preparing export batches...';
