@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Simple Solutions | Roof Age Lead System V7.16</title>
+  <title>Simple Solutions | Roof Age Lead System V7.17</title>
   <style>
     :root {
       --maroon: #7a0f1b;
@@ -829,7 +829,7 @@
               <span>Coverage Safety Mode: for a single/manual ZIP, search across Maryland so cross-county ZIPs are not missed. Large multi-ZIP pulls stay county-limited for speed.</span>
             </label>
             <div class="section-note" style="margin-top:12px">
-              <strong>Street View Logic:</strong> To avoid false house icons, 🏠 only appears after Street View is verified. Unverified properties show a Map button that opens Google Maps/Street View for the address. If Google verifies no panorama, the app shows a dash.
+              <strong>Street View Logic:</strong> 🏠 only appears after Street View is verified. Unverified properties show a Map button only; no hover preview. If Google verifies no panorama, the app shows a dash.
             </div>
           </div>
 
@@ -875,7 +875,7 @@
             <button class="light" onclick="verifyVisibleStreetView()">Verify Street View</button>
             <button class="blue" onclick="enrichVisibleOwners()">Enrich Visible Owners</button>
           </div>
-          <div id="apiStatus" class="hint quick-status">Ready. <span class="version-pill" id="versionPill">V7.16</span> Use Property Type Filter, select ZIPs, then Pull Leads.</div>
+          <div id="apiStatus" class="hint quick-status">Ready. <span class="version-pill" id="versionPill">V7.17</span> Use Property Type Filter, select ZIPs, then Pull Leads.</div>
           <div id="zipExplorer" class="hidden" style="margin-top:12px"></div>
 
           <div class="secondary-tools">
@@ -1087,7 +1087,7 @@
   <div id="streetViewPreview" aria-hidden="true">
     <div id="streetViewTitle" class="streetview-head">Street View Preview</div>
     <div class="streetview-frame-wrap"><iframe id="streetViewFrame" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
-    <div class="streetview-foot">Free shortcut: hover to preview via Google Maps embed, click to open Street View/Maps.</div>
+    <div class="streetview-foot">Verified Street View previews only. Unverified addresses use the Map button with no hover preview.</div>
   </div>
 
 
@@ -1101,7 +1101,7 @@
   </div>
 
   <script>
-    const APP_VERSION = 'V7.13';
+    const APP_VERSION = 'V7.17';
     const CURRENT_YEAR = new Date().getFullYear();
     const MD_PROPERTY_LAYER_URL = 'https://mdgeodata.md.gov/imap/rest/services/PlanningCadastre/MD_PropertyData/MapServer/0/query';
     const MD_COUNTIES = [
@@ -2248,7 +2248,7 @@ Recommended Action: Offer free roof age & condition check with photo documentati
         return;
       }
       const status = document.getElementById('apiStatus');
-      if (status) status.innerHTML = '<strong>Please wait:</strong> verifying visible Street View availability. 🏠 will only appear where Google confirms a panorama. Unverified homes remain as Map buttons.';
+      if (status) status.innerHTML = '<strong>Please wait:</strong> verifying visible Street View availability. 🏠 will only appear where Google confirms a panorama. Unverified homes remain as Map buttons without hover previews.';
       queueStreetViewChecksForVisibleLeads();
     }
 
@@ -2297,10 +2297,10 @@ Recommended Action: Offer free roof age & condition check with photo documentati
         return '<span class="streetview-checking" title="Checking Street View availability">Checking</span>';
       }
 
-      // Free fallback mode: do NOT show a house icon unless Street View is verified.
-      // The Map button still opens Google Maps/Street View attempt for the exact lead location.
-      const mapAttrs = `target="_blank" rel="noopener" href="${streetViewLink(lead)}" onmouseenter="showStreetViewPreview(event, '${lead.id}')" onmousemove="moveStreetViewPreview(event)" onmouseleave="hideStreetViewPreview()"`;
-      return `<a class="streetview-map" ${mapAttrs} title="Unverified free shortcut — opens Google Maps/Street View if available">Map</a>`;
+      // Unverified fallback: do not show a house icon and do not show a Street View hover preview.
+      // This prevents misleading previews from nearby/incorrect panoramas.
+      const mapAttrs = `target="_blank" rel="noopener" href="${mapsLink(lead)}"`;
+      return `<a class="streetview-map" ${mapAttrs} title="Open regular Google Maps for this address. Verify Street View first to show the house icon.">Map</a>`;
     }
 
     function streetViewLink(lead) {
