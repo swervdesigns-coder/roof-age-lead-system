@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Simple Solutions | Roof Age Lead System V7.12</title>
+  <title>Simple Solutions | Roof Age Lead System V7.13</title>
   <style>
     :root {
       --maroon: #7a0f1b;
@@ -755,7 +755,7 @@
           <h2>Lead Builder</h2>
         </div>
         <div class="card-body">
-          <div class="lead-builder-badge">⚡ V7.11 Stable ZIP Loader · Fixed Show ZIPs</div>
+          <div class="lead-builder-badge">⚡ V7.13 Pull Leads Runtime Fix · Loading Verified</div>
           <div class="command-card">
             <h3>Pull Maryland Property Data</h3>
             <p>Pick a county, choose residential/commercial/both, pull leads, open exact SDAT records, and optionally enrich owner names through the included Vercel API route.</p>
@@ -1084,7 +1084,7 @@
   </div>
 
   <script>
-    const APP_VERSION = 'V7.12';
+    const APP_VERSION = 'V7.13';
     const CURRENT_YEAR = new Date().getFullYear();
     const MD_PROPERTY_LAYER_URL = 'https://mdgeodata.md.gov/imap/rest/services/PlanningCadastre/MD_PropertyData/MapServer/0/query';
     const MD_COUNTIES = [
@@ -1127,6 +1127,8 @@
     let lastBatchExportRows = [];
     let ownerEnrichInProgress = false;
     let activePullController = null;
+    let selectedRouteLeadIds = new Set();
+    let streetViewSetupWarningShown = false;
 
     const normalize = value => String(value ?? '').trim();
     const cleanHeader = h => normalize(h).toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -1702,14 +1704,10 @@
       const maxWanted = Math.max(1, parseInt(document.getElementById('apiMax').value, 10) || 1000);
       let allNew = [];
 
-      // Every new Pull Leads run starts with a clean dashboard instead of adding to the previous run.
-      leads = [];
-      routeLeads = [];
-      selectedRouteLeadIds.clear();
-      streetViewSetupWarningShown = false;
-      const routeOutput = document.getElementById('routeOutput');
-      if (routeOutput) routeOutput.innerHTML = '';
-      renderAll();
+      if (!selectedZips.length && !selectedCounties.length) {
+        status.innerHTML = '<strong>Select a county or enter/select at least one ZIP first.</strong>';
+        return;
+      }
 
       const zipModeMsg = selectedZips.length > 1
           ? `${selectedZips.length} selected ZIPs`
@@ -1718,6 +1716,15 @@
             : getCountyLabel(selectedCounties);
 
       setBusy(true, `Please wait — pulling your leads for ${zipModeMsg}. Large searches may take a minute...`);
+
+      // Every new Pull Leads run starts with a clean dashboard instead of adding to the previous run.
+      leads = [];
+      routeLeads = [];
+      if (selectedRouteLeadIds && typeof selectedRouteLeadIds.clear === 'function') selectedRouteLeadIds.clear();
+      streetViewSetupWarningShown = false;
+      const routeOutput = document.getElementById('routeOutput');
+      if (routeOutput) routeOutput.innerHTML = '';
+      renderAll();
 
       try {
         const features = await fetchLeadsForPull(maxWanted);
@@ -1928,7 +1935,7 @@
     }
 
     function clearRouteSelection() {
-      selectedRouteLeadIds.clear();
+      if (selectedRouteLeadIds && typeof selectedRouteLeadIds.clear === 'function') selectedRouteLeadIds.clear();
       renderLeads();
       const apiStatus = document.getElementById('apiStatus');
       if (apiStatus) apiStatus.textContent = 'Selected route homes cleared.';
@@ -2118,7 +2125,7 @@ Recommended Action: Offer free roof age & condition check with photo documentati
       setFieldValue('routeMax', '20');
       setFieldValue('routeMinScore', '5');
       routeLeads = [];
-      selectedRouteLeadIds.clear();
+      if (selectedRouteLeadIds && typeof selectedRouteLeadIds.clear === 'function') selectedRouteLeadIds.clear();
       clearStatusAreas();
       switchTab('leads');
       renderAll();
@@ -2128,7 +2135,7 @@ Recommended Action: Offer free roof age & condition check with photo documentati
       // True blank-state reset: clears every in-memory result, every table/stat, ZIP explorer, routes, filters, and criteria.
       leads = [];
       routeLeads = [];
-      selectedRouteLeadIds.clear();
+      if (selectedRouteLeadIds && typeof selectedRouteLeadIds.clear === 'function') selectedRouteLeadIds.clear();
       streetViewSetupWarningShown = false;
       countyZipStats = [];
       lastBatchExportRows = [];
@@ -2191,7 +2198,7 @@ Recommended Action: Offer free roof age & condition check with photo documentati
       if (!confirm('Clear all leads?')) return;
       leads = [];
       routeLeads = [];
-      selectedRouteLeadIds.clear();
+      if (selectedRouteLeadIds && typeof selectedRouteLeadIds.clear === 'function') selectedRouteLeadIds.clear();
       renderAll();
       document.getElementById('routeOutput').innerHTML = '';
       const apiStatus = document.getElementById('apiStatus');
