@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Simple Solutions | Roof Age Lead System V7.10</title>
+  <title>Simple Solutions | Roof Age Lead System V7.11</title>
   <style>
     :root {
       --maroon: #7a0f1b;
@@ -695,7 +695,7 @@
           <h2>Lead Builder</h2>
         </div>
         <div class="card-body">
-          <div class="lead-builder-badge">⚡ V7.10 Stable Multi-ZIP Pull · Route Selection</div>
+          <div class="lead-builder-badge">⚡ V7.11 Stable ZIP Loader · Fixed Show ZIPs</div>
           <div class="command-card">
             <h3>Pull Maryland Property Data</h3>
             <p>Pick a county, choose residential/commercial/both, pull leads, open exact SDAT records, and optionally enrich owner names through the included Vercel API route.</p>
@@ -1014,7 +1014,7 @@
   </div>
 
   <script>
-    const APP_VERSION = 'V7.10';
+    const APP_VERSION = 'V7.11';
     const CURRENT_YEAR = new Date().getFullYear();
     const MD_PROPERTY_LAYER_URL = 'https://mdgeodata.md.gov/imap/rest/services/PlanningCadastre/MD_PropertyData/MapServer/0/query';
     const MD_COUNTIES = [
@@ -1629,7 +1629,6 @@
       if (!selectedCounties.length && !selectedZips.length) return alert('Choose one or more counties or select ZIPs first.');
 
       const maxForExport = Math.max(1000, parseInt(document.getElementById('apiMax').value, 10) || 1000);
-      const selectedCounties = getSelectedApiCounties();
       const where = getPullWhereClause();
 
       try {
