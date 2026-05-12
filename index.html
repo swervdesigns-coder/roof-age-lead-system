@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Simple Solutions | Roof Age Lead System V7.15</title>
+  <title>Simple Solutions | Roof Age Lead System V7.16</title>
   <style>
     :root {
       --maroon: #7a0f1b;
@@ -829,7 +829,7 @@
               <span>Coverage Safety Mode: for a single/manual ZIP, search across Maryland so cross-county ZIPs are not missed. Large multi-ZIP pulls stay county-limited for speed.</span>
             </label>
             <div class="section-note" style="margin-top:12px">
-              <strong>Street View Logic:</strong> To avoid false house icons, 🏠 only appears after Street View is verified. Until then, use the neutral Map button. If no panorama is verified, the app shows N/A.
+              <strong>Street View Logic:</strong> To avoid false house icons, 🏠 only appears after Street View is verified. Unverified properties show a Map button that opens Google Maps/Street View for the address. If Google verifies no panorama, the app shows a dash.
             </div>
           </div>
 
@@ -875,7 +875,7 @@
             <button class="light" onclick="verifyVisibleStreetView()">Verify Street View</button>
             <button class="blue" onclick="enrichVisibleOwners()">Enrich Visible Owners</button>
           </div>
-          <div id="apiStatus" class="hint quick-status">Ready. <span class="version-pill" id="versionPill">V7.15</span> Use Property Type Filter, select ZIPs, then Pull Leads.</div>
+          <div id="apiStatus" class="hint quick-status">Ready. <span class="version-pill" id="versionPill">V7.16</span> Use Property Type Filter, select ZIPs, then Pull Leads.</div>
           <div id="zipExplorer" class="hidden" style="margin-top:12px"></div>
 
           <div class="secondary-tools">
@@ -2248,7 +2248,7 @@ Recommended Action: Offer free roof age & condition check with photo documentati
         return;
       }
       const status = document.getElementById('apiStatus');
-      if (status) status.innerHTML = '<strong>Please wait:</strong> checking visible Street View availability. House icons will only show where Google verifies a panorama.';
+      if (status) status.innerHTML = '<strong>Please wait:</strong> verifying visible Street View availability. 🏠 will only appear where Google confirms a panorama. Unverified homes remain as Map buttons.';
       queueStreetViewChecksForVisibleLeads();
     }
 
@@ -2280,28 +2280,27 @@ Recommended Action: Offer free roof age & condition check with photo documentati
 
     function streetViewCell(lead) {
       if (!hasUsableStreetViewLocation(lead)) {
-        return '<span class="streetview-na" title="No usable location for map or Street View">N/A</span>';
+        return '<span class="streetview-na" title="No usable location for map or Street View">—</span>';
       }
 
       if (lead.streetViewStatus === 'available') {
         const icon = '🏠';
         const commonAttrs = `target="_blank" rel="noopener" href="${streetViewLink(lead)}" onmouseenter="showStreetViewPreview(event, '${lead.id}')" onmousemove="moveStreetViewPreview(event)" onmouseleave="hideStreetViewPreview()"`;
-        return `<a class="streetview-icon verified" ${commonAttrs} title="Verified Street View available — open Street View">${icon}</a>`;
+        return `<a class="streetview-icon verified" ${commonAttrs} title="Verified Street View available — hover to preview, click to open Street View">${icon}</a>`;
       }
 
       if (lead.streetViewStatus === 'unavailable') {
-        return '<span class="streetview-na" title="Google did not find Street View for this location">N/A</span>';
+        return '<span class="streetview-na" title="Google verified no Street View panorama for this location">—</span>';
       }
 
       if (lead.streetViewStatus === 'checking') {
         return '<span class="streetview-checking" title="Checking Street View availability">Checking</span>';
       }
 
-      if (lead.streetViewStatus === 'setup_needed' || lead.streetViewStatus === 'error') {
-        return `<a class="streetview-map" target="_blank" rel="noopener" href="${mapsLink(lead)}" title="Street View verification is not configured. Open regular Google Maps instead.">Map</a>`;
-      }
-
-      return `<a class="streetview-map" target="_blank" rel="noopener" href="${mapsLink(lead)}" title="Unverified. Opens Google Maps without showing a Street View house icon.">Map</a>`;
+      // Free fallback mode: do NOT show a house icon unless Street View is verified.
+      // The Map button still opens Google Maps/Street View attempt for the exact lead location.
+      const mapAttrs = `target="_blank" rel="noopener" href="${streetViewLink(lead)}" onmouseenter="showStreetViewPreview(event, '${lead.id}')" onmousemove="moveStreetViewPreview(event)" onmouseleave="hideStreetViewPreview()"`;
+      return `<a class="streetview-map" ${mapAttrs} title="Unverified free shortcut — opens Google Maps/Street View if available">Map</a>`;
     }
 
     function streetViewLink(lead) {
@@ -2330,7 +2329,7 @@ Recommended Action: Offer free roof age & condition check with photo documentati
           await checkStreetViewAvailability(lead, key);
         } catch (err) {
           const msg = String(err.message || '').toLowerCase();
-          lead.streetViewStatus = msg.includes('missing') || msg.includes('key') ? 'setup_needed' : 'error';
+          lead.streetViewStatus = 'unknown';
           lead.streetViewPanoId = '';
           lead.streetViewChecked = true;
           console.warn('Street View check failed', err);
@@ -2364,15 +2363,15 @@ Recommended Action: Offer free roof age & condition check with photo documentati
         lead.streetViewStatus = 'unavailable';
         lead.streetViewPanoId = '';
       } else if (data.status === 'MISSING_KEY') {
-        lead.streetViewStatus = 'setup_needed';
+        lead.streetViewStatus = 'unknown';
         lead.streetViewPanoId = '';
         if (!streetViewSetupWarningShown) {
           streetViewSetupWarningShown = true;
           const apiStatus = document.getElementById('apiStatus');
-          if (apiStatus) apiStatus.innerHTML = '<strong>Street View setup needed:</strong> Add GOOGLE_MAPS_API_KEY in Vercel Environment Variables, enable Street View Static API, and redeploy. Until then the table will show Setup instead of N/A or Check Failed.';
+          if (apiStatus) apiStatus.innerHTML = '<strong>Street View verification not configured:</strong> The app will keep using free Map shortcuts until a Google key is configured. No false house icons will be shown.';
         }
       } else if (data.status === 'REQUEST_DENIED' || data.status === 'OVER_QUERY_LIMIT' || data.status === 'ERROR') {
-        lead.streetViewStatus = 'error';
+        lead.streetViewStatus = 'unknown';
         lead.streetViewPanoId = '';
       } else {
         lead.streetViewStatus = 'unavailable';
