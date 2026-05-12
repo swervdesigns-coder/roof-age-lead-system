@@ -553,6 +553,39 @@
       font-size: 12px;
       font-weight: 900;
     }
+
+    .streetview-setup {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 64px;
+      padding: 6px 8px;
+      border-radius: 999px;
+      background: #fef3c7;
+      color: #92400e;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .route-select-cell { min-width: 52px; text-align: center; }
+    .route-check {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--maroon);
+      cursor: pointer;
+    }
+    .route-select-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      background: #f8fafc;
+    }
+    .route-select-bar strong { color: #111827; }
     .streetview-checking {
       display: inline-flex;
       align-items: center;
@@ -634,7 +667,7 @@
           <h2>Lead Builder</h2>
         </div>
         <div class="card-body">
-          <div class="lead-builder-badge">⚡ V7.4 Multi-County Search · Auto-Reset Pulls</div>
+          <div class="lead-builder-badge">⚡ V7.9 Route Selection · Street View Setup Fix</div>
           <div class="command-card">
             <h3>Pull Maryland Property Data</h3>
             <p>Pick a county, choose residential/commercial/both, pull leads, open exact SDAT records, and optionally enrich owner names through the included Vercel API route.</p>
@@ -853,10 +886,19 @@
                 <option value="neighborhoodAsc">Neighborhood</option>
               </select>
             </div>
+            <div class="route-select-bar">
+              <div><strong id="selectedRouteCount">0 selected</strong><div class="hint">Check homes in the table, then build a custom Google Maps route.</div></div>
+              <div class="btns" style="margin-top:0">
+                <button class="light" onclick="selectVisibleForRoute()">Select Visible</button>
+                <button class="light" onclick="clearRouteSelection()">Clear Selected</button>
+                <button class="blue" onclick="buildSelectedRoute()">Build Selected Route</button>
+              </div>
+            </div>
             <div class="table-wrap">
               <table>
                 <thead>
                   <tr>
+                    <th>Select</th>
                     <th>Priority</th>
                     <th>Score</th>
                     <th>Address</th>
@@ -1457,6 +1499,8 @@
       // This prevents inflated dashboard tiles when users test multiple counties, ZIPs, or year ranges.
       leads = [];
       routeLeads = [];
+      selectedRouteLeadIds.clear();
+      streetViewSetupWarningShown = false;
       const routeOutput = document.getElementById('routeOutput');
       if (routeOutput) routeOutput.innerHTML = '';
       renderAll();
@@ -1629,6 +1673,7 @@
     function renderLeads() {
       const rows = filteredLeads().map(l => `
         <tr>
+          <td class="route-select-cell"><input class="route-check" type="checkbox" ${selectedRouteLeadIds.has(l.id) ? 'checked' : ''} onchange="toggleRouteLead('${l.id}', this.checked)" title="Add this home to a custom route" /></td>
           <td><span class="badge ${badgeClass(l.priority)}">${l.priority}</span></td>
           <td><strong>${l.score}</strong></td>
           <td><strong>${escapeHtml(l.address)}</strong><br><span class="hint">${escapeHtml([l.city,l.state,l.zip].filter(Boolean).join(', '))}</span></td>
@@ -1649,7 +1694,46 @@
             </div>
           </td>
         </tr>`).join('');
-      document.getElementById('leadRows').innerHTML = rows || `<tr><td colspan="11">No leads yet. Pull Maryland data, import a CSV, or load demo data.</td></tr>`;
+      document.getElementById('leadRows').innerHTML = rows || `<tr><td colspan="12">No leads yet. Pull Maryland data, import a CSV, or load demo data.</td></tr>`;
+      updateSelectedRouteCount();
+    }
+
+    function toggleRouteLead(id, checked) {
+      if (checked) selectedRouteLeadIds.add(id);
+      else selectedRouteLeadIds.delete(id);
+      updateSelectedRouteCount();
+    }
+
+    function updateSelectedRouteCount() {
+      const el = document.getElementById('selectedRouteCount');
+      if (el) el.textContent = `${selectedRouteLeadIds.size} selected`;
+    }
+
+    function selectVisibleForRoute() {
+      filteredLeads().forEach(l => selectedRouteLeadIds.add(l.id));
+      renderLeads();
+    }
+
+    function clearRouteSelection() {
+      selectedRouteLeadIds.clear();
+      renderLeads();
+      const apiStatus = document.getElementById('apiStatus');
+      if (apiStatus) apiStatus.textContent = 'Selected route homes cleared.';
+    }
+
+    function getSelectedRouteLeads() {
+      return leads.filter(l => selectedRouteLeadIds.has(l.id));
+    }
+
+    function buildSelectedRoute() {
+      const selected = getSelectedRouteLeads();
+      if (!selected.length) {
+        alert('Select at least one home from the Leads table first.');
+        return;
+      }
+      switchTab('route');
+      routeLeads = selected.slice(0, 25);
+      renderRouteOutput(routeLeads, 'Custom selected route ready');
     }
 
     function renderStats() {
@@ -1693,6 +1777,13 @@
     }
 
     function buildRoute() {
+      const selected = getSelectedRouteLeads();
+      if (selected.length) {
+        routeLeads = selected.slice(0, 25);
+        renderRouteOutput(routeLeads, 'Custom selected route ready');
+        return;
+      }
+
       const zip = document.getElementById('routeZip').value.trim();
       const max = parseInt(document.getElementById('routeMax').value, 10) || 20;
       const minScore = parseInt(document.getElementById('routeMinScore').value, 10) || 0;
@@ -1700,15 +1791,19 @@
         .sort((a,b) => b.score - a.score)
         .slice(0, max);
       if (!routeLeads.length) {
-        document.getElementById('routeOutput').innerHTML = '<p>No route leads found. Adjust ZIP or minimum score.</p>';
+        document.getElementById('routeOutput').innerHTML = '<p>No route leads found. Adjust ZIP/minimum score or select homes from the Leads table.</p>';
         return;
       }
-      const routeLink = 'https://www.google.com/maps/dir/' + routeLeads.map(l => encodeURIComponent(l.fullAddress || `${l.address}, ${l.city}, ${l.state} ${l.zip}`)).join('/');
+      renderRouteOutput(routeLeads, 'Route ready');
+    }
+
+    function renderRouteOutput(routeItems, title = 'Route ready') {
+      const routeLink = 'https://www.google.com/maps/dir/' + routeItems.map(l => encodeURIComponent(l.fullAddress || `${l.address}, ${l.city}, ${l.state} ${l.zip}`)).join('/');
       document.getElementById('routeOutput').innerHTML = `
-        <div class="section-note"><strong>Route ready:</strong> ${routeLeads.length} stops. Google Maps works best with smaller batches, so split into 10–20 stops if needed.</div>
-        <div class="btns"><a class="button-link blue" target="_blank" href="${routeLink}">Open Route in Google Maps</a></div>
+        <div class="section-note"><strong>${escapeHtml(title)}:</strong> ${routeItems.length} stops. Google Maps works best with smaller batches, so split into 10–20 stops if needed.</div>
+        <div class="btns"><a class="button-link blue" target="_blank" href="${routeLink}">Open Route in Google Maps</a><button class="light" onclick="clearRouteSelection()">Clear Selected Homes</button></div>
         <div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>#</th><th>Priority</th><th>Score</th><th>Address</th><th>Age</th><th>Notes</th></tr></thead><tbody>
-          ${routeLeads.map((l,i) => `<tr><td>${i+1}</td><td>${l.priority}</td><td>${l.score}</td><td>${escapeHtml(l.fullAddress)}</td><td>${l.age}</td><td>${escapeHtml(l.notes)}</td></tr>`).join('')}
+          ${routeItems.map((l,i) => `<tr><td>${i+1}</td><td>${l.priority}</td><td>${l.score}</td><td>${escapeHtml(l.fullAddress)}</td><td>${l.age}</td><td>${linkifyText(l.notes)}</td></tr>`).join('')}
         </tbody></table></div>`;
     }
 
@@ -1775,6 +1870,7 @@ Recommended Action: Offer free roof age & condition check with photo documentati
 
     function deleteLead(id) {
       leads = leads.filter(l => l.id !== id);
+      selectedRouteLeadIds.delete(id);
       renderAll();
     }
 
@@ -1809,6 +1905,7 @@ Recommended Action: Offer free roof age & condition check with photo documentati
       setFieldValue('routeMax', '20');
       setFieldValue('routeMinScore', '5');
       routeLeads = [];
+      selectedRouteLeadIds.clear();
       clearStatusAreas();
       switchTab('leads');
       renderAll();
@@ -1818,6 +1915,8 @@ Recommended Action: Offer free roof age & condition check with photo documentati
       // True blank-state reset: clears every in-memory result, every table/stat, ZIP explorer, routes, filters, and criteria.
       leads = [];
       routeLeads = [];
+      selectedRouteLeadIds.clear();
+      streetViewSetupWarningShown = false;
       countyZipStats = [];
       lastBatchExportRows = [];
 
@@ -1879,6 +1978,7 @@ Recommended Action: Offer free roof age & condition check with photo documentati
       if (!confirm('Clear all leads?')) return;
       leads = [];
       routeLeads = [];
+      selectedRouteLeadIds.clear();
       renderAll();
       document.getElementById('routeOutput').innerHTML = '';
       const apiStatus = document.getElementById('apiStatus');
@@ -1952,8 +2052,12 @@ Recommended Action: Offer free roof age & condition check with photo documentati
         return '<span class="streetview-na" title="Google reported no Street View panorama near this property">N/A</span>';
       }
 
+      if (lead.streetViewStatus === 'setup_needed') {
+        return '<span class="streetview-setup" title="Street View verification needs GOOGLE_MAPS_API_KEY on Vercel or a local API key.">Setup</span>';
+      }
+
       if (lead.streetViewStatus === 'error') {
-        return '<span class="streetview-na" title="Street View check failed. Confirm your Google Maps API key is enabled for Street View Static API.">Check Failed</span>';
+        return '<span class="streetview-na" title="Street View verification error. Use Preview/console or check Google API billing, key restrictions, and Street View Static API access.">API Issue</span>';
       }
 
       // Unknown means not checked yet. Do not show a clickable icon until verified.
@@ -1975,14 +2079,15 @@ Recommended Action: Offer free roof age & condition check with photo documentati
 
     async function checkStreetViewForVisibleLeads() {
       const key = getStreetViewApiKey();
-      const visible = filteredLeads().filter(l => l.streetViewStatus === 'unknown').slice(0, 80);
+      const visible = filteredLeads().filter(l => l.streetViewStatus === 'unknown').slice(0, 40);
       for (const lead of visible) lead.streetViewStatus = 'checking';
       if (visible.length) renderLeads();
       for (const lead of visible) {
         try {
           await checkStreetViewAvailability(lead, key);
         } catch (err) {
-          lead.streetViewStatus = 'error';
+          const msg = String(err.message || '').toLowerCase();
+          lead.streetViewStatus = msg.includes('missing') || msg.includes('key') ? 'setup_needed' : 'error';
           lead.streetViewPanoId = '';
           lead.streetViewChecked = true;
           console.warn('Street View check failed', err);
@@ -2016,10 +2121,18 @@ Recommended Action: Offer free roof age & condition check with photo documentati
         lead.streetViewStatus = 'unavailable';
         lead.streetViewPanoId = '';
       } else if (data.status === 'MISSING_KEY') {
+        lead.streetViewStatus = 'setup_needed';
+        lead.streetViewPanoId = '';
+        if (!streetViewSetupWarningShown) {
+          streetViewSetupWarningShown = true;
+          const apiStatus = document.getElementById('apiStatus');
+          if (apiStatus) apiStatus.innerHTML = '<strong>Street View setup needed:</strong> Add GOOGLE_MAPS_API_KEY in Vercel Environment Variables, enable Street View Static API, and redeploy. Until then the table will show Setup instead of N/A or Check Failed.';
+        }
+      } else if (data.status === 'REQUEST_DENIED' || data.status === 'OVER_QUERY_LIMIT' || data.status === 'ERROR') {
         lead.streetViewStatus = 'error';
         lead.streetViewPanoId = '';
       } else {
-        lead.streetViewStatus = 'error';
+        lead.streetViewStatus = 'unavailable';
         lead.streetViewPanoId = '';
       }
       lead.streetViewChecked = true;
