@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Simple Solutions | Roof Age Lead System V7.13</title>
+  <title>Simple Solutions | Roof Age Lead System V7.3</title>
   <style>
     :root {
       --maroon: #7a0f1b;
@@ -812,9 +812,9 @@
               <input id="zipSafetyMode" type="checkbox" checked />
               <span>Coverage Safety Mode: for a single/manual ZIP, search across Maryland so cross-county ZIPs are not missed. Large multi-ZIP pulls stay county-limited for speed.</span>
             </label>
-            <label>Google Street View API Key</label>
-            <input id="streetViewApiKey" type="password" placeholder="Optional: enables Street View availability checks" oninput="saveStreetViewApiKey()" />
-            <div class="hint">Optional locally. On Vercel, set GOOGLE_MAPS_API_KEY as an environment variable. The house icon only appears after Google verifies Street View exists.</div>
+            <div class="section-note" style="margin-top:12px">
+              <strong>Free Street View Mode:</strong> No Google API key required. The 🏠 icon opens Google Maps/Street View using the property location. If Google has Street View, it opens there; if not, Google falls back to the map.
+            </div>
           </div>
 
           <div class="zip-workflow-card">
@@ -1070,7 +1070,7 @@
   <div id="streetViewPreview" aria-hidden="true">
     <div id="streetViewTitle" class="streetview-head">Street View Preview</div>
     <div class="streetview-frame-wrap"><iframe id="streetViewFrame" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
-    <div class="streetview-foot">Hover preview only appears after Google verifies Street View imagery exists for this property.</div>
+    <div class="streetview-foot">Free shortcut: hover to preview via Google Maps embed, click to open Street View/Maps.</div>
   </div>
 
 
@@ -2222,7 +2222,6 @@ Recommended Action: Offer free roof age & condition check with photo documentati
       renderLeads();
       renderNeighborhoods();
       renderStats();
-      queueStreetViewChecksForVisibleLeads();
     }
 
 
@@ -2253,40 +2252,22 @@ Recommended Action: Offer free roof age & condition check with photo documentati
     }
 
     function streetViewCell(lead) {
-      if (!hasUsableStreetViewLocation(lead)) return '<span class="streetview-na" title="No usable location for Street View">N/A</span>';
+      if (!hasUsableStreetViewLocation(lead)) {
+        return '<span class="streetview-na" title="No usable location for Street View">N/A</span>';
+      }
 
       const icon = '🏠';
       const commonAttrs = `target="_blank" rel="noopener" href="${streetViewLink(lead)}" onmouseenter="showStreetViewPreview(event, '${lead.id}')" onmousemove="moveStreetViewPreview(event)" onmouseleave="hideStreetViewPreview()"`;
 
-      // Strict verified mode: only show the house icon after Google Street View metadata returns OK.
-      // This prevents the dashboard from showing icons for parcels where Street View does not exist.
-      if (lead.streetViewStatus === 'available') {
-        return `<a class="streetview-icon verified" ${commonAttrs} title="Street View verified — hover to preview or click to open">${icon}</a>`;
-      }
-
-      if (lead.streetViewStatus === 'checking') {
-        return '<span class="streetview-checking" title="Checking Google Street View availability">Checking</span>';
-      }
-
-      if (lead.streetViewStatus === 'unavailable') {
-        return '<span class="streetview-na" title="Google reported no Street View panorama near this property">N/A</span>';
-      }
-
-      if (lead.streetViewStatus === 'setup_needed') {
-        return '<span class="streetview-setup" title="Street View verification needs GOOGLE_MAPS_API_KEY on Vercel or a local API key.">Setup</span>';
-      }
-
-      if (lead.streetViewStatus === 'error') {
-        return '<span class="streetview-na" title="Street View verification error. Use Preview/console or check Google API billing, key restrictions, and Street View Static API access.">API Issue</span>';
-      }
-
-      // Unknown means not checked yet. Do not show a clickable icon until verified.
-      return '<span class="streetview-checking" title="Street View has not been checked yet">Pending</span>';
+      return `<a class="streetview-icon fallback" ${commonAttrs} title="Open Google Street View / Maps — no API key required">${icon}</a>`;
     }
 
     function streetViewLink(lead) {
-      if (lead.streetViewPanoId) return `https://www.google.com/maps/@?api=1&map_action=pano&pano=${encodeURIComponent(lead.streetViewPanoId)}`;
-      if (lead.lat && lead.lng) return `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${encodeURIComponent(lead.lat + ',' + lead.lng)}`;
+      if (lead.lat && lead.lng) {
+        const lat = encodeURIComponent(lead.lat);
+        const lng = encodeURIComponent(lead.lng);
+        return `https://www.google.com/maps?q=&layer=c&cbll=${lat},${lng}&cbp=11,0,0,0,0`;
+      }
       return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lead.fullAddress || lead.address)}`;
     }
 
