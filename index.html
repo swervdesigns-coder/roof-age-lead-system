@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Simple Solutions | Roof Age Lead System V7.11</title>
+  <title>Simple Solutions | Roof Age Lead System V7.12</title>
   <style>
     :root {
       --maroon: #7a0f1b;
@@ -667,6 +667,66 @@
       line-height: 1.35;
     }
 
+  
+
+    /* V7.12 Loading + pull stability */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(15, 23, 42, .48);
+      backdrop-filter: blur(5px);
+      z-index: 9999;
+      padding: 22px;
+    }
+    .loading-overlay.active { display: flex; }
+    .loading-card {
+      width: min(520px, 92vw);
+      background: white;
+      border-radius: 22px;
+      box-shadow: 0 30px 80px rgba(0,0,0,.32);
+      padding: 24px;
+      border: 1px solid rgba(255,255,255,.65);
+    }
+    .loading-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 21px;
+      font-weight: 900;
+      color: #111827;
+      margin-bottom: 8px;
+    }
+    .spinner {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      border: 4px solid #e5e7eb;
+      border-top-color: var(--maroon);
+      animation: spin 1s linear infinite;
+      flex: 0 0 auto;
+    }
+    .loading-card p {
+      margin: 0;
+      color: #4b5563;
+      line-height: 1.45;
+      font-size: 14px;
+    }
+    .loading-detail {
+      margin-top: 14px;
+      padding: 11px 12px;
+      border-radius: 14px;
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      color: #374151;
+      font-size: 13px;
+      min-height: 42px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    body.is-busy button { pointer-events: none; opacity: .72; }
+
   </style>
 </head>
 <body>
@@ -798,7 +858,7 @@
             <button class="light" onclick="previewMarylandQuery()">Preview Query</button>
             <button class="blue" onclick="enrichVisibleOwners()">Enrich Visible Owners</button>
           </div>
-          <div id="apiStatus" class="hint quick-status">Ready. <span class="version-pill" id="versionPill">V7.10</span> Use Property Type Filter, select ZIPs, then Pull Leads.</div>
+          <div id="apiStatus" class="hint quick-status">Ready. <span class="version-pill" id="versionPill">V7.12</span> Use Property Type Filter, select ZIPs, then Pull Leads.</div>
           <div id="zipExplorer" class="hidden" style="margin-top:12px"></div>
 
           <div class="secondary-tools">
@@ -1013,8 +1073,18 @@
     <div class="streetview-foot">Hover preview only appears after Google verifies Street View imagery exists for this property.</div>
   </div>
 
+
+
+  <div id="loadingOverlay" class="loading-overlay" aria-live="polite" aria-busy="true">
+    <div class="loading-card">
+      <div class="loading-title"><span class="spinner"></span><span>Please wait — pulling your leads</span></div>
+      <p>The app is contacting Maryland Parcel Points and loading your selected county/ZIP criteria. Large pulls can take a little longer.</p>
+      <div id="loadingDetail" class="loading-detail">Starting search...</div>
+    </div>
+  </div>
+
   <script>
-    const APP_VERSION = 'V7.11';
+    const APP_VERSION = 'V7.12';
     const CURRENT_YEAR = new Date().getFullYear();
     const MD_PROPERTY_LAYER_URL = 'https://mdgeodata.md.gov/imap/rest/services/PlanningCadastre/MD_PropertyData/MapServer/0/query';
     const MD_COUNTIES = [
@@ -1060,6 +1130,26 @@
 
     const normalize = value => String(value ?? '').trim();
     const cleanHeader = h => normalize(h).toLowerCase().replace(/[^a-z0-9]/g, '');
+
+
+    function setBusy(isBusy, message = '') {
+      const overlay = document.getElementById('loadingOverlay');
+      const detail = document.getElementById('loadingDetail');
+      document.body.classList.toggle('is-busy', !!isBusy);
+      if (overlay) overlay.classList.toggle('active', !!isBusy);
+      if (detail && message) detail.textContent = message;
+      const status = document.getElementById('apiStatus');
+      if (status && message) status.textContent = message;
+    }
+
+    function setBusyMessage(message) {
+      const detail = document.getElementById('loadingDetail');
+      if (detail) detail.textContent = message;
+      const status = document.getElementById('apiStatus');
+      if (status) status.textContent = message;
+    }
+
+    function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
     function parseCSV(text) {
       const rows = [];
@@ -1454,7 +1544,7 @@
 
       while (offset < maxRecords) {
         const count = Math.min(batchSize, maxRecords - offset);
-        status.textContent = `${progressText} ${offset + 1} to ${offset + count}...`;
+        setBusyMessage(`${progressText} ${offset + 1} to ${offset + count}...`);
         const res = await fetch(buildMarylandUrl(where, offset, count));
         if (!res.ok) throw new Error(`Maryland service returned ${res.status}`);
         const data = await res.json();
@@ -1494,7 +1584,7 @@
       const zips = Array.from(new Set(selectedCounties.flatMap(c => MD_COUNTY_ZIPS[c] || []))).sort((a, b) => a.localeCompare(b));
       const stats = zips.map(zip => ({ zip, count: 0 }));
       renderZipOptions('Fast ZIP list loaded instantly from the built-in Maryland county ZIP library', stats, false);
-      status.innerHTML = `<strong>Fast ZIP mode ready.</strong> Loaded ${stats.length} ZIP codes from ${getCountyLabel(selectedCounties)}. Click Verify ZIPs to compare against live Maryland data, or select ZIPs and pull leads.`;
+      status.innerHTML = `<strong>Fast ZIP mode ready.</strong> Loaded ${stats.length} ZIP codes from ${getCountyLabel(selectedCounties)}. Select ZIPs, then click Pull Leads. A loading message will show while Maryland records are being pulled.`;
     }
 
     async function deepScanMarylandZipCodes() {
@@ -1561,17 +1651,58 @@
       document.getElementById('apiStatus').innerHTML = `<strong>Top ZIP pull complete.</strong> Pulled leads from: ${topZips.join(', ')}.`;
     }
 
+
+    function chunkZipsForQuery(zips, size = 8) {
+      const chunks = [];
+      for (let i = 0; i < zips.length; i += size) chunks.push(zips.slice(i, i + size));
+      return chunks;
+    }
+
+    async function fetchLeadsForPull(maxWanted) {
+      const selectedZips = getSelectedApiZips();
+      const selectedCounties = getSelectedApiCounties();
+      const availableZips = getAvailableZipOptions();
+      const allVisibleSelected = allVisibleZipOptionsSelected(selectedZips);
+      const manualZip = getManualZipValue();
+
+      // V7.12 stability fix:
+      // ArcGIS can fail or stall with very long ZIP IN() queries or very broad county-only requests.
+      // If the user selected many ZIPs, we query ZIPs in smaller groups and merge results.
+      if (selectedZips.length > 8) {
+        const zipChunks = chunkZipsForQuery(selectedZips, 8);
+        const perChunkLimit = Math.max(200, Math.ceil(maxWanted / zipChunks.length));
+        let allFeatures = [];
+
+        for (let i = 0; i < zipChunks.length && allFeatures.length < maxWanted; i++) {
+          const chunk = zipChunks[i];
+          const countyLock = !document.getElementById('zipSafetyMode')?.checked;
+          const where = buildMarylandWhereClause({
+            counties: countyLock ? selectedCounties : [],
+            zips: chunk,
+            forceCountyWithZips: countyLock
+          });
+          setBusyMessage(`Please wait — pulling lead group ${i + 1} of ${zipChunks.length} (${chunk.join(', ')})...`);
+          const features = await fetchMarylandFeatures(where, perChunkLimit, `Pulling group ${i + 1} of ${zipChunks.length}`);
+          allFeatures = allFeatures.concat(features);
+          await sleep(150);
+        }
+        return allFeatures.slice(0, maxWanted);
+      }
+
+      // If a county is selected and no ZIPs were selected, use a normal county-wide pull.
+      // If all visible ZIPs are selected but the list is small, still use the existing county strategy.
+      const where = getPullWhereClause();
+      return fetchMarylandFeatures(where, maxWanted, 'Pulling selected lead records');
+    }
+
     async function pullMarylandPropertyData(showAlert = true) {
       const status = document.getElementById('apiStatus');
       const selectedZips = getSelectedApiZips();
       const selectedCounties = getSelectedApiCounties();
-      const where = getPullWhereClause();
       const maxWanted = Math.max(1, parseInt(document.getElementById('apiMax').value, 10) || 1000);
       let allNew = [];
 
-      // IMPORTANT V7.3 CHANGE:
       // Every new Pull Leads run starts with a clean dashboard instead of adding to the previous run.
-      // This prevents inflated dashboard tiles when users test multiple counties, ZIPs, or year ranges.
       leads = [];
       routeLeads = [];
       selectedRouteLeadIds.clear();
@@ -1580,23 +1711,22 @@
       if (routeOutput) routeOutput.innerHTML = '';
       renderAll();
 
-      const zipModeMsg = allVisibleZipOptionsSelected(selectedZips) && selectedCounties.length
-        ? `county-wide search for ${getCountyLabel(selectedCounties)} using the selected year/property filters`
-        : selectedZips.length > 1
+      const zipModeMsg = selectedZips.length > 1
           ? `${selectedZips.length} selected ZIPs`
           : selectedZips.length === 1
             ? `ZIP ${selectedZips[0]}`
             : getCountyLabel(selectedCounties);
 
-      status.textContent = `Starting fresh, then connecting to Maryland Parcel Points for ${zipModeMsg}...`;
+      setBusy(true, `Please wait — pulling your leads for ${zipModeMsg}. Large searches may take a minute...`);
 
       try {
-        const features = await fetchMarylandFeatures(where, maxWanted, 'Pulling selected lead records');
+        const features = await fetchLeadsForPull(maxWanted);
+        setBusyMessage('Processing Maryland property records and removing duplicates...');
         allNew = features.map(leadFromMarylandFeature).filter(l => l.address && l.yearBuilt);
 
         const seenKeys = new Set();
         const uniqueNew = allNew.filter(l => {
-          const key = `${l.address}|${l.zip}|${l.yearBuilt}`.toLowerCase();
+          const key = `${l.address}|${l.zip}|${l.yearBuilt}|${l.acctid || ''}`.toLowerCase();
           if (seenKeys.has(key)) return false;
           seenKeys.add(key);
           return true;
@@ -1604,15 +1734,17 @@
 
         leads = uniqueNew.map(scoreLead);
         renderAll();
+        setBusy(false);
         status.innerHTML = allNew.length
           ? `<strong>Done.</strong> ${APP_VERSION} fresh search complete. Pulled ${allNew.length} records and loaded ${uniqueNew.length} unique leads. Previous dashboard results were cleared first.`
-          : `<strong>No matching records found.</strong> Previous dashboard results were cleared. Try widening the year range, changing the Property Type Filter, clearing county, or using Preview to inspect the query.`;
+          : `<strong>No matching records found.</strong> Previous dashboard results were cleared. Try widening the year range, changing the Property Type Filter to Residential + Commercial, clearing ZIP selections, or using Preview to inspect the query.`;
       } catch (err) {
         console.error(err);
         leads = [];
         routeLeads = [];
         renderAll();
-        status.innerHTML = `<strong style="color:#b91c1c">Could not pull data.</strong> The dashboard was cleared before the failed run. ${escapeHtml(err.message)}<br>Try fewer ZIPs, a smaller year range, or use Batch Export.`;
+        setBusy(false);
+        status.innerHTML = `<strong style="color:#b91c1c">Could not pull data.</strong> The dashboard was cleared before the failed run. ${escapeHtml(err.message)}<br>Try fewer ZIPs, a smaller year range, selecting fewer counties, or use Batch Export.`;
       }
     }
 
