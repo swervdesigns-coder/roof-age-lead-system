@@ -533,6 +533,14 @@
       text-decoration: none;
     }
     .streetview-icon:hover { transform: translateY(-1px); box-shadow: 0 14px 25px rgba(15,23,42,.18); }
+    .streetview-icon.fallback {
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      color: #111827;
+    }
+    .streetview-icon.verified {
+      background: linear-gradient(135deg, #22c55e, #15803d);
+      color: #fff;
+    }
     .streetview-na {
       display: inline-flex;
       align-items: center;
@@ -683,7 +691,7 @@
             </label>
             <label>Google Street View API Key</label>
             <input id="streetViewApiKey" type="password" placeholder="Optional: enables Street View availability checks" oninput="saveStreetViewApiKey()" />
-            <div class="hint">To show Street View icons only when imagery exists, add a Google Maps Platform key with Street View Static API enabled. Without a key, Street View cells show N/A.</div>
+            <div class="hint">Optional: add a Google Maps Platform key with Street View Static API enabled to verify if imagery exists. Without a key, the app still shows a house icon for any lead with a usable location and opens Google Street View/Maps.</div>
             <div class="hint">Use a manual ZIP for a quick check, or select multiple ZIPs below. Batch Export keeps large pulls in 1,000-row files.</div>
           </div>
 
@@ -1920,15 +1928,31 @@ Recommended Action: Offer free roof age & condition check with photo documentati
       return lead.fullAddress || `${lead.address}, ${lead.city}, ${lead.state} ${lead.zip}`;
     }
 
+    function hasUsableStreetViewLocation(lead) {
+      return Boolean((lead.lat && lead.lng) || lead.fullAddress || lead.address);
+    }
+
     function streetViewCell(lead) {
-      const key = getStreetViewApiKey();
-      if (!key) return '<span class="streetview-na" title="Add Google Street View API key to enable availability checks">N/A</span>';
+      if (!hasUsableStreetViewLocation(lead)) return '<span class="streetview-na" title="No usable location for Street View">N/A</span>';
+
+      const icon = '🏠';
+      const commonAttrs = `target="_blank" rel="noopener" href="${streetViewLink(lead)}" onmouseenter="showStreetViewPreview(event, '${lead.id}')" onmousemove="moveStreetViewPreview(event)" onmouseleave="hideStreetViewPreview()"`;
+
       if (lead.streetViewStatus === 'available') {
-        return `<a class="streetview-icon" target="_blank" rel="noopener" href="${streetViewLink(lead)}" onmouseenter="showStreetViewPreview(event, '${lead.id}')" onmousemove="moveStreetViewPreview(event)" onmouseleave="hideStreetViewPreview()" title="Street View available — hover to preview or click to open">👁</a>`;
+        return `<a class="streetview-icon verified" ${commonAttrs} title="Street View verified — hover to preview or click to open">${icon}</a>`;
       }
-      if (lead.streetViewStatus === 'checking') return '<span class="streetview-checking">Checking</span>';
-      if (lead.streetViewStatus === 'unavailable') return '<span class="streetview-na">N/A</span>';
-      return '<span class="streetview-checking">Queued</span>';
+
+      if (lead.streetViewStatus === 'unavailable') {
+        return '<span class="streetview-na" title="Google reported no Street View panorama near this property">N/A</span>';
+      }
+
+      if (lead.streetViewStatus === 'checking') {
+        return `<a class="streetview-icon fallback" ${commonAttrs} title="Checking Street View availability — click opens Google Maps/Street View">${icon}</a>`;
+      }
+
+      // Fallback mode: do not hide the Street View option just because an API key is missing or metadata check failed.
+      // The click opens Google's Street View/map view using parcel coordinates/address, and hover shows the preview card.
+      return `<a class="streetview-icon fallback" ${commonAttrs} title="Street View/map preview available — not API-verified">${icon}</a>`;
     }
 
     function streetViewLink(lead) {
@@ -1955,7 +1979,9 @@ Recommended Action: Offer free roof age & condition check with photo documentati
         try {
           await checkStreetViewAvailability(lead, key);
         } catch (err) {
-          lead.streetViewStatus = 'unavailable';
+          // Do not show N/A when metadata fails because of key/CORS/quota restrictions.
+          // Keep a safe fallback icon that still opens Google Maps/Street View.
+          lead.streetViewStatus = 'fallback';
           lead.streetViewChecked = true;
         }
         renderLeads();
@@ -1972,8 +1998,12 @@ Recommended Action: Offer free roof age & condition check with photo documentati
       if (data.status === 'OK') {
         lead.streetViewStatus = 'available';
         lead.streetViewPanoId = data.pano_id || '';
-      } else {
+      } else if (data.status === 'ZERO_RESULTS') {
         lead.streetViewStatus = 'unavailable';
+        lead.streetViewPanoId = '';
+      } else {
+        // REQUEST_DENIED, OVER_QUERY_LIMIT, UNKNOWN_ERROR, etc. should not remove the icon.
+        lead.streetViewStatus = 'fallback';
         lead.streetViewPanoId = '';
       }
       lead.streetViewChecked = true;
