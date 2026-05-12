@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Simple Solutions | Roof Age Lead System V7.3</title>
+  <title>Simple Solutions | Roof Age Lead System V7.15</title>
   <style>
     :root {
       --maroon: #7a0f1b;
@@ -582,6 +582,22 @@
       font-weight: 900;
     }
 
+    .streetview-map {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 48px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #1d4ed8;
+      font-size: 12px;
+      font-weight: 900;
+      text-decoration: none;
+      box-shadow: 0 8px 16px rgba(15,23,42,.08);
+    }
+    .streetview-map:hover { transform: translateY(-1px); box-shadow: 0 12px 22px rgba(15,23,42,.14); }
+
     .streetview-setup {
       display: inline-flex;
       align-items: center;
@@ -813,7 +829,7 @@
               <span>Coverage Safety Mode: for a single/manual ZIP, search across Maryland so cross-county ZIPs are not missed. Large multi-ZIP pulls stay county-limited for speed.</span>
             </label>
             <div class="section-note" style="margin-top:12px">
-              <strong>Free Street View Mode:</strong> No Google API key required. The 🏠 icon opens Google Maps/Street View using the property location. If Google has Street View, it opens there; if not, Google falls back to the map.
+              <strong>Street View Logic:</strong> To avoid false house icons, 🏠 only appears after Street View is verified. Until then, use the neutral Map button. If no panorama is verified, the app shows N/A.
             </div>
           </div>
 
@@ -856,9 +872,10 @@
             <button class="blue" onclick="refreshCurrentSearch()">Refresh / Start Fresh</button>
             <button class="green" onclick="downloadCountyBatches()">Batch Export</button>
             <button class="light" onclick="previewMarylandQuery()">Preview Query</button>
+            <button class="light" onclick="verifyVisibleStreetView()">Verify Street View</button>
             <button class="blue" onclick="enrichVisibleOwners()">Enrich Visible Owners</button>
           </div>
-          <div id="apiStatus" class="hint quick-status">Ready. <span class="version-pill" id="versionPill">V7.12</span> Use Property Type Filter, select ZIPs, then Pull Leads.</div>
+          <div id="apiStatus" class="hint quick-status">Ready. <span class="version-pill" id="versionPill">V7.15</span> Use Property Type Filter, select ZIPs, then Pull Leads.</div>
           <div id="zipExplorer" class="hidden" style="margin-top:12px"></div>
 
           <div class="secondary-tools">
@@ -2225,6 +2242,16 @@ Recommended Action: Offer free roof age & condition check with photo documentati
     }
 
 
+    function verifyVisibleStreetView() {
+      if (!leads.length) {
+        alert('Pull leads first, then verify Street View.');
+        return;
+      }
+      const status = document.getElementById('apiStatus');
+      if (status) status.innerHTML = '<strong>Please wait:</strong> checking visible Street View availability. House icons will only show where Google verifies a panorama.';
+      queueStreetViewChecksForVisibleLeads();
+    }
+
     function getStreetViewApiKey() {
       return normalize(document.getElementById('streetViewApiKey')?.value || localStorage.getItem('roofLeadStreetViewApiKey') || '');
     }
@@ -2253,13 +2280,28 @@ Recommended Action: Offer free roof age & condition check with photo documentati
 
     function streetViewCell(lead) {
       if (!hasUsableStreetViewLocation(lead)) {
-        return '<span class="streetview-na" title="No usable location for Street View">N/A</span>';
+        return '<span class="streetview-na" title="No usable location for map or Street View">N/A</span>';
       }
 
-      const icon = '🏠';
-      const commonAttrs = `target="_blank" rel="noopener" href="${streetViewLink(lead)}" onmouseenter="showStreetViewPreview(event, '${lead.id}')" onmousemove="moveStreetViewPreview(event)" onmouseleave="hideStreetViewPreview()"`;
+      if (lead.streetViewStatus === 'available') {
+        const icon = '🏠';
+        const commonAttrs = `target="_blank" rel="noopener" href="${streetViewLink(lead)}" onmouseenter="showStreetViewPreview(event, '${lead.id}')" onmousemove="moveStreetViewPreview(event)" onmouseleave="hideStreetViewPreview()"`;
+        return `<a class="streetview-icon verified" ${commonAttrs} title="Verified Street View available — open Street View">${icon}</a>`;
+      }
 
-      return `<a class="streetview-icon fallback" ${commonAttrs} title="Open Google Street View / Maps — no API key required">${icon}</a>`;
+      if (lead.streetViewStatus === 'unavailable') {
+        return '<span class="streetview-na" title="Google did not find Street View for this location">N/A</span>';
+      }
+
+      if (lead.streetViewStatus === 'checking') {
+        return '<span class="streetview-checking" title="Checking Street View availability">Checking</span>';
+      }
+
+      if (lead.streetViewStatus === 'setup_needed' || lead.streetViewStatus === 'error') {
+        return `<a class="streetview-map" target="_blank" rel="noopener" href="${mapsLink(lead)}" title="Street View verification is not configured. Open regular Google Maps instead.">Map</a>`;
+      }
+
+      return `<a class="streetview-map" target="_blank" rel="noopener" href="${mapsLink(lead)}" title="Unverified. Opens Google Maps without showing a Street View house icon.">Map</a>`;
     }
 
     function streetViewLink(lead) {
@@ -2280,7 +2322,7 @@ Recommended Action: Offer free roof age & condition check with photo documentati
 
     async function checkStreetViewForVisibleLeads() {
       const key = getStreetViewApiKey();
-      const visible = filteredLeads().filter(l => l.streetViewStatus === 'unknown').slice(0, 40);
+      const visible = filteredLeads().filter(l => l.streetViewStatus === 'unknown').slice(0, 25);
       for (const lead of visible) lead.streetViewStatus = 'checking';
       if (visible.length) renderLeads();
       for (const lead of visible) {
@@ -2304,7 +2346,7 @@ Recommended Action: Offer free roof age & condition check with photo documentati
       let data;
 
       if (key) {
-        const url = `https://maps.googleapis.com/maps/api/streetview/metadata?location=${location}&radius=75&source=outdoor&key=${encodeURIComponent(key)}`;
+        const url = `https://maps.googleapis.com/maps/api/streetview/metadata?location=${location}&radius=150&source=outdoor&key=${encodeURIComponent(key)}`;
         const res = await fetch(url);
         if (!res.ok) throw new Error(`Street View metadata returned ${res.status}`);
         data = await res.json();
