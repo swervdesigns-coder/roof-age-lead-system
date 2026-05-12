@@ -691,7 +691,7 @@
             </label>
             <label>Google Street View API Key</label>
             <input id="streetViewApiKey" type="password" placeholder="Optional: enables Street View availability checks" oninput="saveStreetViewApiKey()" />
-            <div class="hint">Optional: add a Google Maps Platform key with Street View Static API enabled to verify if imagery exists. Without a key, the app still shows a house icon for any lead with a usable location and opens Google Street View/Maps.</div>
+            <div class="hint">Optional locally. On Vercel, set GOOGLE_MAPS_API_KEY as an environment variable. The house icon only appears after Google verifies Street View exists. No verified Street View = N/A.</div>
             <div class="hint">Use a manual ZIP for a quick check, or select multiple ZIPs below. Batch Export keeps large pulls in 1,000-row files.</div>
           </div>
 
@@ -936,7 +936,7 @@
   <div id="streetViewPreview" aria-hidden="true">
     <div id="streetViewTitle" class="streetview-head">Street View Preview</div>
     <div class="streetview-frame-wrap"><iframe id="streetViewFrame" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
-    <div class="streetview-foot">Hover preview uses Google Maps. If Street View is unavailable, Google may show a map or nearby view.</div>
+    <div class="streetview-foot">Hover preview only appears after Google verifies Street View imagery exists for this property.</div>
   </div>
 
   <script>
@@ -1938,21 +1938,26 @@ Recommended Action: Offer free roof age & condition check with photo documentati
       const icon = '🏠';
       const commonAttrs = `target="_blank" rel="noopener" href="${streetViewLink(lead)}" onmouseenter="showStreetViewPreview(event, '${lead.id}')" onmousemove="moveStreetViewPreview(event)" onmouseleave="hideStreetViewPreview()"`;
 
+      // Strict verified mode: only show the house icon after Google Street View metadata returns OK.
+      // This prevents the dashboard from showing icons for parcels where Street View does not exist.
       if (lead.streetViewStatus === 'available') {
         return `<a class="streetview-icon verified" ${commonAttrs} title="Street View verified — hover to preview or click to open">${icon}</a>`;
+      }
+
+      if (lead.streetViewStatus === 'checking') {
+        return '<span class="streetview-checking" title="Checking Google Street View availability">Checking</span>';
       }
 
       if (lead.streetViewStatus === 'unavailable') {
         return '<span class="streetview-na" title="Google reported no Street View panorama near this property">N/A</span>';
       }
 
-      if (lead.streetViewStatus === 'checking') {
-        return `<a class="streetview-icon fallback" ${commonAttrs} title="Checking Street View availability — click opens Google Maps/Street View">${icon}</a>`;
+      if (lead.streetViewStatus === 'error') {
+        return '<span class="streetview-na" title="Street View check failed. Confirm your Google Maps API key is enabled for Street View Static API.">Check Failed</span>';
       }
 
-      // Fallback mode: do not hide the Street View option just because an API key is missing or metadata check failed.
-      // The click opens Google's Street View/map view using parcel coordinates/address, and hover shows the preview card.
-      return `<a class="streetview-icon fallback" ${commonAttrs} title="Street View/map preview available — not API-verified">${icon}</a>`;
+      // Unknown means not checked yet. Do not show a clickable icon until verified.
+      return '<span class="streetview-checking" title="Street View has not been checked yet">Pending</span>';
     }
 
     function streetViewLink(lead) {
@@ -1963,47 +1968,58 @@ Recommended Action: Offer free roof age & condition check with photo documentati
 
     let streetViewCheckTimer = null;
     function queueStreetViewChecksForVisibleLeads() {
-      const key = getStreetViewApiKey();
-      if (!key || !leads.length) return;
+      if (!leads.length) return;
       clearTimeout(streetViewCheckTimer);
       streetViewCheckTimer = setTimeout(() => checkStreetViewForVisibleLeads(), 250);
     }
 
     async function checkStreetViewForVisibleLeads() {
       const key = getStreetViewApiKey();
-      if (!key) return;
-      const visible = filteredLeads().filter(l => l.streetViewStatus === 'unknown').slice(0, 60);
+      const visible = filteredLeads().filter(l => l.streetViewStatus === 'unknown').slice(0, 80);
       for (const lead of visible) lead.streetViewStatus = 'checking';
       if (visible.length) renderLeads();
       for (const lead of visible) {
         try {
           await checkStreetViewAvailability(lead, key);
         } catch (err) {
-          // Do not show N/A when metadata fails because of key/CORS/quota restrictions.
-          // Keep a safe fallback icon that still opens Google Maps/Street View.
-          lead.streetViewStatus = 'fallback';
+          lead.streetViewStatus = 'error';
+          lead.streetViewPanoId = '';
           lead.streetViewChecked = true;
+          console.warn('Street View check failed', err);
         }
         renderLeads();
-        await new Promise(r => setTimeout(r, 90));
+        await new Promise(r => setTimeout(r, 70));
       }
     }
 
     async function checkStreetViewAvailability(lead, key) {
-      const location = encodeURIComponent(getStreetViewLocation(lead));
-      const url = `https://maps.googleapis.com/maps/api/streetview/metadata?location=${location}&radius=75&source=outdoor&key=${encodeURIComponent(key)}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`Street View metadata returned ${res.status}`);
-      const data = await res.json();
+      const locationRaw = getStreetViewLocation(lead);
+      const location = encodeURIComponent(locationRaw);
+      let data;
+
+      if (key) {
+        const url = `https://maps.googleapis.com/maps/api/streetview/metadata?location=${location}&radius=75&source=outdoor&key=${encodeURIComponent(key)}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Street View metadata returned ${res.status}`);
+        data = await res.json();
+      } else {
+        // Production-safe option: use the included Vercel API route so the Google key is not exposed in the browser.
+        const res = await fetch(`/api/streetview-check?location=${location}`);
+        if (!res.ok) throw new Error(`Street View API route returned ${res.status}`);
+        data = await res.json();
+      }
+
       if (data.status === 'OK') {
         lead.streetViewStatus = 'available';
         lead.streetViewPanoId = data.pano_id || '';
       } else if (data.status === 'ZERO_RESULTS') {
         lead.streetViewStatus = 'unavailable';
         lead.streetViewPanoId = '';
+      } else if (data.status === 'MISSING_KEY') {
+        lead.streetViewStatus = 'error';
+        lead.streetViewPanoId = '';
       } else {
-        // REQUEST_DENIED, OVER_QUERY_LIMIT, UNKNOWN_ERROR, etc. should not remove the icon.
-        lead.streetViewStatus = 'fallback';
+        lead.streetViewStatus = 'error';
         lead.streetViewPanoId = '';
       }
       lead.streetViewChecked = true;
