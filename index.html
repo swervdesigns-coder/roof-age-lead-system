@@ -787,7 +787,7 @@
           <h2>Lead Builder</h2>
         </div>
         <div class="card-body">
-          <div class="lead-builder-badge">⚡ V7.20 Stable Pull Leads · Map-Only Shortcut</div>
+          <div class="lead-builder-badge">⚡ V7.21 Stable Pull Leads · Map-Only Shortcut</div>
           <div class="command-card">
             <h3>Pull Maryland Property Data</h3>
             <p>Pick a county, choose residential/commercial/both, pull leads, open exact SDAT records, and optionally enrich owner names through the included Vercel API route.</p>
@@ -890,7 +890,7 @@
             <button class="light" onclick="previewMarylandQuery()">Preview Query</button>
                         <button class="blue" onclick="enrichVisibleOwners()">Enrich Visible Owners</button>
           </div>
-          <div id="apiStatus" class="hint quick-status">Ready. <span class="version-pill" id="versionPill">V7.20</span> Use Property Type Filter, select ZIPs, then Pull Leads.</div>
+          <div id="apiStatus" class="hint quick-status">Ready. <span class="version-pill" id="versionPill">V7.21</span> Use Property Type Filter, select ZIPs, then Pull Leads.</div>
           <div id="zipExplorer" class="hidden" style="margin-top:12px"></div>
 
           <div class="secondary-tools">
@@ -1098,7 +1098,7 @@
     </div>
   </main>
   <script>
-    const APP_VERSION = 'V7.20';
+    const APP_VERSION = 'V7.21';
     const CURRENT_YEAR = new Date().getFullYear();
     const MD_PROPERTY_LAYER_URL = 'https://mdgeodata.md.gov/imap/rest/services/PlanningCadastre/MD_PropertyData/MapServer/0/query';
     const MD_COUNTIES = [
@@ -1387,12 +1387,16 @@
     }
 
     function shouldCountyLockMultiZip(selectedZips, selectedCounties) {
-      const manualZip = getManualZipValue();
+      const safetyMode = document.getElementById('zipSafetyMode')?.checked !== false;
       if (!selectedCounties.length) return false;
       if (!selectedZips.length) return true;
-      if (manualZip && selectedZips.length === 1) return false;
       if (allVisibleZipOptionsSelected(selectedZips)) return true;
-      return selectedZips.length > 3;
+      // Important V7.21 fix:
+      // When specific ZIPs are selected, Coverage Safety Mode should search those ZIPs across Maryland
+      // instead of forcing them to the selected county. This prevents empty results when a ZIP overlaps
+      // county lines or when the user selected ZIPs like 20613/20772 while the county selection is stale.
+      if (safetyMode) return false;
+      return selectedZips.length > 8;
     }
 
     function getPullWhereClause() {
@@ -1417,9 +1421,8 @@
       const zipWhere = buildZipWhere(selectedZips);
       const safetyMode = document.getElementById('zipSafetyMode')?.checked !== false;
       const forceCountyWithZips = options.forceCountyWithZips === true;
-      const manualZip = getManualZipValue();
-      const smallZipSafetySearch = safetyMode && zipWhere && selectedZips.length <= 3 && manualZip;
-      if (selectedCounties.length && (forceCountyWithZips || !smallZipSafetySearch)) {
+      const zipSafetySearch = safetyMode && zipWhere && !forceCountyWithZips;
+      if (selectedCounties.length && (forceCountyWithZips || !zipSafetySearch)) {
         const quotedCounties = selectedCounties.map(c => `'${String(c).replace(/'/g, "''")}'`).join(',');
         parts.push(`JURSCODE IN (${quotedCounties})`);
       }
@@ -1680,7 +1683,7 @@
       const manualZip = getManualZipValue();
       const allVisibleSelected = allVisibleZipOptionsSelected(selectedZips);
 
-      // V7.20 reliability fix:
+      // V7.21 reliability fix:
       // If the user selected all ZIPs for a county, do NOT build a long ZIP query.
       // A county-only query is cleaner, faster, and more reliable with Maryland ArcGIS.
       if (selectedCounties.length && (!selectedZips.length || allVisibleSelected)) {
@@ -1702,9 +1705,10 @@
 
         for (let i = 0; i < zipChunks.length && allFeatures.length < maxWanted; i++) {
           const chunk = zipChunks[i];
-          const useCountyLock = selectedCounties.length > 0 && !manualZip;
+          const safetyMode = document.getElementById('zipSafetyMode')?.checked !== false;
+          const useCountyLock = selectedCounties.length > 0 && !safetyMode;
           const where = buildMarylandWhereClause({
-            counties: useCountyLock ? selectedCounties : [],
+            counties: useCountyLock ? selectedCounties : selectedCounties,
             zips: chunk,
             forceCountyWithZips: useCountyLock
           });
