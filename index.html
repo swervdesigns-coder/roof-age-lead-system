@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Simple Solutions | Roof Age Lead System V7.17</title>
+  <title>Simple Solutions | Roof Age Lead System V7.3</title>
   <style>
     :root {
       --maroon: #7a0f1b;
@@ -743,6 +743,22 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     body.is-busy button { pointer-events: none; opacity: .72; }
 
+    /* V7.19 Map-only behavior: Street View column uses a simple Google Maps shortcut with no API checks and no hover preview. */
+    .streetview-map {
+      background: linear-gradient(135deg, #eef2ff, #e0e7ff) !important;
+      color: #1d4ed8 !important;
+      border: 1px solid #c7d2fe;
+    }
+    .streetview-icon.verified {
+      background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
+      color: #111827 !important;
+      border: 1px solid rgba(146,64,14,.28);
+      font-size: 19px;
+    }
+    .streetview-checking {
+      min-width: 78px;
+    }
+
   </style>
 </head>
 <body>
@@ -771,7 +787,7 @@
           <h2>Lead Builder</h2>
         </div>
         <div class="card-body">
-          <div class="lead-builder-badge">⚡ V7.13 Pull Leads Runtime Fix · Loading Verified</div>
+          <div class="lead-builder-badge">⚡ V7.20 Stable Pull Leads · Map-Only Shortcut</div>
           <div class="command-card">
             <h3>Pull Maryland Property Data</h3>
             <p>Pick a county, choose residential/commercial/both, pull leads, open exact SDAT records, and optionally enrich owner names through the included Vercel API route.</p>
@@ -829,7 +845,7 @@
               <span>Coverage Safety Mode: for a single/manual ZIP, search across Maryland so cross-county ZIPs are not missed. Large multi-ZIP pulls stay county-limited for speed.</span>
             </label>
             <div class="section-note" style="margin-top:12px">
-              <strong>Street View Logic:</strong> 🏠 only appears after Street View is verified. Unverified properties show a Map button only; no hover preview. If Google verifies no panorama, the app shows a dash.
+              <strong>Map Shortcut Logic:</strong> The Street View column now uses a simple Map button only. No API key, no hover preview, and no Street View verification. The button opens Google Maps for the address so the user can choose Street View when Google provides it.
             </div>
           </div>
 
@@ -872,10 +888,9 @@
             <button class="blue" onclick="refreshCurrentSearch()">Refresh / Start Fresh</button>
             <button class="green" onclick="downloadCountyBatches()">Batch Export</button>
             <button class="light" onclick="previewMarylandQuery()">Preview Query</button>
-            <button class="light" onclick="verifyVisibleStreetView()">Verify Street View</button>
-            <button class="blue" onclick="enrichVisibleOwners()">Enrich Visible Owners</button>
+                        <button class="blue" onclick="enrichVisibleOwners()">Enrich Visible Owners</button>
           </div>
-          <div id="apiStatus" class="hint quick-status">Ready. <span class="version-pill" id="versionPill">V7.17</span> Use Property Type Filter, select ZIPs, then Pull Leads.</div>
+          <div id="apiStatus" class="hint quick-status">Ready. <span class="version-pill" id="versionPill">V7.20</span> Use Property Type Filter, select ZIPs, then Pull Leads.</div>
           <div id="zipExplorer" class="hidden" style="margin-top:12px"></div>
 
           <div class="secondary-tools">
@@ -1011,7 +1026,7 @@
                     <th>Priority</th>
                     <th>Score</th>
                     <th>Address</th>
-                    <th>Street View</th>
+                    <th>Map</th>
                     <th>Year</th>
                     <th>Age</th>
                     <th>ZIP</th>
@@ -1082,26 +1097,8 @@
       </section>
     </div>
   </main>
-
-
-  <div id="streetViewPreview" aria-hidden="true">
-    <div id="streetViewTitle" class="streetview-head">Street View Preview</div>
-    <div class="streetview-frame-wrap"><iframe id="streetViewFrame" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
-    <div class="streetview-foot">Verified Street View previews only. Unverified addresses use the Map button with no hover preview.</div>
-  </div>
-
-
-
-  <div id="loadingOverlay" class="loading-overlay" aria-live="polite" aria-busy="true">
-    <div class="loading-card">
-      <div class="loading-title"><span class="spinner"></span><span>Please wait — pulling your leads</span></div>
-      <p>The app is contacting Maryland Parcel Points and loading your selected county/ZIP criteria. Large pulls can take a little longer.</p>
-      <div id="loadingDetail" class="loading-detail">Starting search...</div>
-    </div>
-  </div>
-
   <script>
-    const APP_VERSION = 'V7.17';
+    const APP_VERSION = 'V7.20';
     const CURRENT_YEAR = new Date().getFullYear();
     const MD_PROPERTY_LAYER_URL = 'https://mdgeodata.md.gov/imap/rest/services/PlanningCadastre/MD_PropertyData/MapServer/0/query';
     const MD_COUNTIES = [
@@ -1680,13 +1677,24 @@
     async function fetchLeadsForPull(maxWanted) {
       const selectedZips = getSelectedApiZips();
       const selectedCounties = getSelectedApiCounties();
-      const availableZips = getAvailableZipOptions();
-      const allVisibleSelected = allVisibleZipOptionsSelected(selectedZips);
       const manualZip = getManualZipValue();
+      const allVisibleSelected = allVisibleZipOptionsSelected(selectedZips);
 
-      // V7.12 stability fix:
-      // ArcGIS can fail or stall with very long ZIP IN() queries or very broad county-only requests.
-      // If the user selected many ZIPs, we query ZIPs in smaller groups and merge results.
+      // V7.20 reliability fix:
+      // If the user selected all ZIPs for a county, do NOT build a long ZIP query.
+      // A county-only query is cleaner, faster, and more reliable with Maryland ArcGIS.
+      if (selectedCounties.length && (!selectedZips.length || allVisibleSelected)) {
+        const where = buildMarylandWhereClause({
+          counties: selectedCounties,
+          zips: [],
+          forceCountyWithZips: true
+        });
+        setBusyMessage(`Please wait — pulling county records for ${getCountyLabel(selectedCounties)}...`);
+        return fetchMarylandFeatures(where, maxWanted, 'Pulling county lead records');
+      }
+
+      // If the user selected many ZIPs, split the request into smaller groups.
+      // Keep the county filter when counties are selected so results stay focused and stable.
       if (selectedZips.length > 8) {
         const zipChunks = chunkZipsForQuery(selectedZips, 8);
         const perChunkLimit = Math.max(200, Math.ceil(maxWanted / zipChunks.length));
@@ -1694,22 +1702,20 @@
 
         for (let i = 0; i < zipChunks.length && allFeatures.length < maxWanted; i++) {
           const chunk = zipChunks[i];
-          const countyLock = !document.getElementById('zipSafetyMode')?.checked;
+          const useCountyLock = selectedCounties.length > 0 && !manualZip;
           const where = buildMarylandWhereClause({
-            counties: countyLock ? selectedCounties : [],
+            counties: useCountyLock ? selectedCounties : [],
             zips: chunk,
-            forceCountyWithZips: countyLock
+            forceCountyWithZips: useCountyLock
           });
-          setBusyMessage(`Please wait — pulling lead group ${i + 1} of ${zipChunks.length} (${chunk.join(', ')})...`);
-          const features = await fetchMarylandFeatures(where, perChunkLimit, `Pulling group ${i + 1} of ${zipChunks.length}`);
+          setBusyMessage(`Please wait — pulling ZIP group ${i + 1} of ${zipChunks.length} (${chunk.join(', ')})...`);
+          const features = await fetchMarylandFeatures(where, perChunkLimit, `Pulling ZIP group ${i + 1} of ${zipChunks.length}`);
           allFeatures = allFeatures.concat(features);
-          await sleep(150);
+          await sleep(120);
         }
         return allFeatures.slice(0, maxWanted);
       }
 
-      // If a county is selected and no ZIPs were selected, use a normal county-wide pull.
-      // If all visible ZIPs are selected but the list is small, still use the existing county strategy.
       const where = getPullWhereClause();
       return fetchMarylandFeatures(where, maxWanted, 'Pulling selected lead records');
     }
@@ -2248,7 +2254,7 @@ Recommended Action: Offer free roof age & condition check with photo documentati
         return;
       }
       const status = document.getElementById('apiStatus');
-      if (status) status.innerHTML = '<strong>Please wait:</strong> verifying visible Street View availability. 🏠 will only appear where Google confirms a panorama. Unverified homes remain as Map buttons without hover previews.';
+      if (status) status.innerHTML = '<strong>Please wait:</strong> verifying visible Street View availability. Verified locations will change from Map to 🏠. Unverified or unavailable locations will stay as Map buttons.';
       queueStreetViewChecksForVisibleLeads();
     }
 
@@ -2280,27 +2286,9 @@ Recommended Action: Offer free roof age & condition check with photo documentati
 
     function streetViewCell(lead) {
       if (!hasUsableStreetViewLocation(lead)) {
-        return '<span class="streetview-na" title="No usable location for map or Street View">—</span>';
+        return '<span class="streetview-na" aria-label="No usable map location">—</span>';
       }
-
-      if (lead.streetViewStatus === 'available') {
-        const icon = '🏠';
-        const commonAttrs = `target="_blank" rel="noopener" href="${streetViewLink(lead)}" onmouseenter="showStreetViewPreview(event, '${lead.id}')" onmousemove="moveStreetViewPreview(event)" onmouseleave="hideStreetViewPreview()"`;
-        return `<a class="streetview-icon verified" ${commonAttrs} title="Verified Street View available — hover to preview, click to open Street View">${icon}</a>`;
-      }
-
-      if (lead.streetViewStatus === 'unavailable') {
-        return '<span class="streetview-na" title="Google verified no Street View panorama for this location">—</span>';
-      }
-
-      if (lead.streetViewStatus === 'checking') {
-        return '<span class="streetview-checking" title="Checking Street View availability">Checking</span>';
-      }
-
-      // Unverified fallback: do not show a house icon and do not show a Street View hover preview.
-      // This prevents misleading previews from nearby/incorrect panoramas.
-      const mapAttrs = `target="_blank" rel="noopener" href="${mapsLink(lead)}"`;
-      return `<a class="streetview-map" ${mapAttrs} title="Open regular Google Maps for this address. Verify Street View first to show the house icon.">Map</a>`;
+      return `<a class="streetview-map" target="_blank" rel="noopener" href="${mapsLink(lead)}" aria-label="Open Google Maps for this address">Map</a>`;
     }
 
     function streetViewLink(lead) {
@@ -2395,10 +2383,11 @@ Recommended Action: Offer free roof age & condition check with photo documentati
 
     function showStreetViewPreview(event, leadId) {
       const lead = leads.find(l => l.id === leadId);
-      if (!lead) return;
+      if (!lead || lead.streetViewStatus !== 'available') return;
       const box = document.getElementById('streetViewPreview');
       const frame = document.getElementById('streetViewFrame');
       const title = document.getElementById('streetViewTitle');
+      if (!box || !frame || !title) return;
       title.textContent = `Street View Preview · ${lead.address}`;
       const url = getStreetViewEmbedUrl(lead);
       if (frame.dataset.src !== url) {
